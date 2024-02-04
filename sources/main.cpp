@@ -1,10 +1,21 @@
-#include "raylib.h"
+/*******************************************************************************************
+ *
+ *   raylib-cpp [core] example - Basic window (adapted for HTML5 platform)
+ *
+ *   This example is prepared to compile for PLATFORM_WEB, PLATFORM_DESKTOP and PLATFORM_RPI
+ *   As you will notice, code structure is slightly diferent to the other examples...
+ *   To compile it for PLATFORM_WEB just uncomment #define PLATFORM_WEB at beginning
+ *
+ *   This example has been created using raylib-cpp (www.raylib.com)
+ *   raylib is licensed under an unmodified zlib/libpng license (View raylib.h for details)
+ *
+ *   Copyright (c) 2015 Ramon Santamaria (@raysan5)
+ *
+ ********************************************************************************************/
 
-// The Jolt headers don't include Jolt.h. Always include Jolt.h before including any other Jolt header.
-// You can use Jolt.h in your precompiled header to speed up compilation.
-#include <Jolt/Jolt.h>
+#include "raylib-cpp.hpp"
+#include "Jolt/Jolt.h"
 
-// Jolt includes
 #include <Jolt/RegisterTypes.h>
 #include <Jolt/Core/Factory.h>
 #include <Jolt/Core/TempAllocator.h>
@@ -16,46 +27,67 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 
-// STL includes
-#include <iostream>
-#include <cstdarg>
-#include <thread>
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+#endif
 
-#define SCREEN_WIDTH (300)
-#define SCREEN_HEIGHT (350)
+//----------------------------------------------------------------------------------
+// Global Variables Definition
+//----------------------------------------------------------------------------------
+int screenWidth = 800;
+int screenHeight = 450;
 
-#define WINDOW_TITLE "Cuckooland"
+//----------------------------------------------------------------------------------
+// Module Functions Declaration
+//----------------------------------------------------------------------------------
+void UpdateDrawFrame(void); // Update and Draw one frame
 
-int main(void)
+//----------------------------------------------------------------------------------
+// Main Enry Point
+//----------------------------------------------------------------------------------
+int main()
 {
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE);
-    SetTargetFPS(60);
-
-    Texture2D texture = LoadTexture(ASSETS_PATH "cuckoo.png"); // Check README.md for how this works
+    // Initialization
+    //--------------------------------------------------------------------------------------
+    raylib::Window window(screenWidth, screenHeight, "jolt is working!");
 
     // test Jolt here
     JPH::RegisterDefaultAllocator();
 
     JPH::Factory::sInstance = new JPH::Factory();
 
-    while (!WindowShouldClose())
+#if defined(PLATFORM_WEB)
+    emscripten_set_main_loop(UpdateDrawFrame, 0, 1);
+#else
+    SetTargetFPS(60); // Set our game to run at 60 frames-per-second
+    //--------------------------------------------------------------------------------------
+
+    // Main game loop
+    while (!window.ShouldClose()) // Detect window close button or ESC key
     {
-        BeginDrawing();
-
-        ClearBackground(RAYWHITE);
-
-        const int texture_x = SCREEN_WIDTH / 2 - texture.width / 2;
-        const int texture_y = SCREEN_HEIGHT / 2 - texture.height / 2;
-        DrawTexture(texture, texture_x, texture_y, WHITE);
-
-        const char *text = "cuckoo";
-        const Vector2 text_size = MeasureTextEx(GetFontDefault(), text, 20, 1);
-        DrawText(text, SCREEN_WIDTH / 2 - text_size.x / 2, texture_y + texture.height + text_size.y, 20, BLACK);
-
-        EndDrawing();
+        UpdateDrawFrame();
     }
-
-    CloseWindow();
+#endif
 
     return 0;
+}
+
+//----------------------------------------------------------------------------------
+// Module Functions Definition
+//----------------------------------------------------------------------------------
+void UpdateDrawFrame(void)
+{
+    // Update
+    //----------------------------------------------------------------------------------
+    // TODO: Update your variables here
+    //----------------------------------------------------------------------------------
+
+    // Draw
+    //----------------------------------------------------------------------------------
+    BeginDrawing();
+
+    ClearBackground(RAYWHITE);
+
+    EndDrawing();
+    //----------------------------------------------------------------------------------
 }

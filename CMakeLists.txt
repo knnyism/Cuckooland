@@ -5,22 +5,36 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# === Raylib ===
+# raylib / raylib-cpp
 include(FetchContent)
 set(FETCHCONTENT_QUIET FALSE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # don't build the supplied examples
 set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) # don't build the supplied example games
 
-FetchContent_Declare(
-    raylib
-    GIT_REPOSITORY "https://github.com/raysan5/raylib.git"
-    GIT_TAG "master"
-    GIT_PROGRESS TRUE
-)
+find_package(raylib QUIET)
+if (NOT raylib_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(
+        raylib
+        GIT_REPOSITORY https://github.com/raysan5/raylib.git
+        GIT_TAG 5.0
+        GIT_SHALLOW 1
+    )
+    FetchContent_MakeAvailable(raylib)
+endif()
 
-FetchContent_MakeAvailable(raylib)
+find_package(raylib_cpp QUIET)
+if (NOT raylib_cpp_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(
+        raylib_cpp
+        GIT_REPOSITORY https://github.com/RobLoach/raylib-cpp.git
+        GIT_TAG v5.0.1
+    )
+    FetchContent_MakeAvailable(raylib_cpp)
+endif()
 
-# === Jolt Physics ===
+# jolt
 set(DOUBLE_PRECISION OFF)
 set(GENERATE_DEBUG_SYMBOLS ON)
 set(CROSS_PLATFORM_DETERMINISTIC OFF)
@@ -62,8 +76,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(JoltPhysics)
 
-# === Project ===
-
 SET_INTERPROCEDURAL_OPTIMIZATION() # Needed by some lto stuff per comment above?
 
 if (EMSCRIPTEN)
@@ -80,7 +92,7 @@ add_executable(${PROJECT_NAME})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17) # we want to use c++ along with c99
 target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE} ${JoltPhysics_SOURCE_DIR}/..)
-target_link_libraries(${PROJECT_NAME} PRIVATE raylib Jolt)
+target_link_libraries(${PROJECT_NAME} PRIVATE raylib raylib_cpp Jolt)
 
 # Setting ASSETS_PATH
 target_compile_definitions(${PROJECT_NAME} PUBLIC ASSETS_PATH="${CMAKE_CURRENT_SOURCE_DIR}/assets/") # Set the asset path macro to the absolute path on the dev machine
