@@ -1,0 +1,4 @@
+namespace game
+{
+    void start();
+}
