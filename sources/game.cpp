@@ -29,6 +29,7 @@ void tick()
 
 void render()
 {
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     raylib::Window window(800, 650, "Cuckooland");
 
     SetTargetFPS(GetMonitorRefreshRate(0));
