@@ -1,8 +1,8 @@
-#include "game.h"
+#include <engine/datamodel.h>
 
 int main()
 {
-    game::start();
+    datamodel::Game game;
 
     return 0;
 }
