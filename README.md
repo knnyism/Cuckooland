@@ -1,22 +1,28 @@
-# Simple and portable CMake template for raylib
+# Cuckooland / BUas Intake (2024)
 
-This is a basic project template for raylib using CMake (using https://github.com/SasLuca/raylib-cmake-template as a basis).
+A game by Oktay Can Ismar a.k.a. kennyjeopardy
 
-The master branch of the raylib source code is downloaded using CMake FetchContent from github and compiled from source as it is much easier than including prebuilt binaries for every platform and configuration.
+## Description
 
-Building from the cmake file will build both raylib and `src/main.cpp` which includes a basic example of a raylib program.
+Wake up esteemed test subject, we've got experiments to conduct regarding our new tool. We've hid cuckoos all over the place -and since none of us feel like getting up from our chairs- we need you to collect them for us.
+Why did we hide cuckoos all over the place? Don't ask questions, just do as you're told. We're watching you.
 
-We are also combining code and cmake stuff from https://github.com/jrouwe/JoltPhysicsHelloWorld. There is currently a dirty hack to make Jolt link dynamically so that it will work nicely with raylib.
+## How to play
 
-## Asset handling
+In this game, the player is given a matter manipulator, a tool that can move, rotate and bring objects closer or further away. 
+The player must use this tool to solve puzzles and **collect** cuckoos.
 
-The example in `src/main.c` uses an example image located in the `assets` folder.
-To load it we use `ASSETS_PATH`, which is a string macro with the *absolute* path "assets" directory.
-This macro is defined in the `CMakeLists.txt` file on line `23`.
+[insert in-game image of cuckoo here]
 
-If you plan on releasing or sharing your game consider manually setting the value of the `ASSETS_PATH` macro.
+- `WASD` to move
+- `Space` to jump
+- `E` to interact
+- [Matter Manipulator] HOLD `Left Mouse` to move objects
+- [Matter Manipulator] HOLD `R` and move mouse to rotate objects
+- [Matter Manipulator] `Mouse Wheel` to bring objects closer or further away
 
-In C you can concatenate string literals by putting them next to each other, 
-eg: `"A" "B"` is `"AB"`. So ASSETS_PATH `"test.png"` becomes `"/path/to/your/assets/test.png"`
+## Assets
 
-If you wanna share your game with others you should set ASSETS_PATH to be a *relative* path like "./assets/". You can do this in the CMakeLists.txt file. 
+- Models / kennyjeopardy (me!)
+- Textures / Half-life 1 by VALVe
+- Sounds / MacInTalk by Apple, Killer7 by Grasshopper Manufacture, sounddogs.com
