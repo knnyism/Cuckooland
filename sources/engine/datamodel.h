@@ -1,51 +1,43 @@
 #pragma once
 
-#include <raylib-cpp.hpp>
 #include <engine/physics.h>
+#include <engine/entity.h>
 
-#include <chrono>
-#include <iostream>
-#include <thread>
+inline std::vector<Entity*> entities;
 
-namespace datamodel
-{
-    class Game
-    {
-    public:
-        const int TICK_RATE = 60;
-        const int TICK_DURATION = 1000 / TICK_RATE;
+template <typename T>
+T* CreateEntity() {
+    T* ent = nullptr;
 
-        const uint MAX_BODIES = 65536;
+    // Look for a dead entity so we can potentially reuse it
+    for (Entity* entity : entities) {
+        if (entity->IsAlive) {
+            continue;
+        }
 
-        const uint NUM_BODY_MUTEXES = 0;
+        T* t = dynamic_cast<T*>(entity);
 
-        const uint MAX_BODY_PAIRS = 65536;
-        const uint MAX_CONTACT_CONSTRAINTS = 10240;
+        if (t == nullptr) {
+            continue;
+        }
 
-        JPH::PhysicsSystem* physics_system{};
+        ent = t;
+        break;
+    }
 
-        Game() {
-            // initialize physics system
+    // If we didn't find a dead entity, create a new one
+    if (ent == nullptr) {
+        ent = new T();
+        ent->id.index = entities.size();
 
-            RegisterDefaultAllocator();
-            Factory::sInstance = new Factory();
-            RegisterTypes();
+        entities.push_back(ent);
+    }
 
-            physics_system = new PhysicsSystem();
-            physics_system->Init(MAX_BODIES, NUM_BODY_MUTEXES, MAX_CONTACT_CONSTRAINTS, MAX_CONTACT_CONSTRAINTS, BPLayerInterfaceImpl(), ObjectVsBroadPhaseLayerFilterImpl(), ObjectLayerPairFilterImpl());
 
-            // create tick and render threads
+    ent->id.version++; // Bump the version number so we don't have to deal with irrelevant entities
+    ent->IsAlive = true;
 
-            std::thread tickThread(&Game::Tick, this);
-            std::thread renderThread(&Game::Render, this);
-
-            tickThread.join();
-            renderThread.join();
-        };
-    private:
-        bool shouldExit = false;
-
-        void Tick();
-        void Render();
-    };
-}
+    return ent;
+};
+Entity* FindEntity(EntityId id);
+void DestroyEntity(Entity* ent);
