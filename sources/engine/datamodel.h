@@ -1,11 +1,11 @@
 #pragma once
 
-#include <raylib-cpp.hpp>
 #include <engine/physics.h>
+#include <raylib-cpp.hpp>
 
 #include <chrono>
-#include <thread>
 #include <iostream>
+#include <thread>
 
 namespace datamodel
 {
