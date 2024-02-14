@@ -35,6 +35,17 @@ if (NOT raylib_cpp_FOUND)
     FetchContent_MakeAvailable(raylib_cpp)
 endif()
 
+find_package(assimp QUIET)
+if (NOT assimp_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(
+        assimp
+        GIT_REPOSITORY https://github.com/assimp/assimp.git
+        GIT_TAG v5.3.1
+    )
+    FetchContent_MakeAvailable(assimp)
+endif()
+
 # jolt
 set(DOUBLE_PRECISION OFF)
 set(GENERATE_DEBUG_SYMBOLS ON)
@@ -93,7 +104,4 @@ add_executable(${PROJECT_NAME})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17) # we want to use c++ along with c99
 target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE} ${JoltPhysics_SOURCE_DIR}/..)
-target_link_libraries(${PROJECT_NAME} PRIVATE raylib raylib_cpp Jolt)
-
-# Setting ASSETS_PATH
-target_compile_definitions(${PROJECT_NAME} PUBLIC ASSETS_PATH="${CMAKE_CURRENT_SOURCE_DIR}/assets/") # Set the asset path macro to the absolute path on the dev machine
+target_link_libraries(${PROJECT_NAME} PRIVATE raylib raylib_cpp assimp Jolt)
