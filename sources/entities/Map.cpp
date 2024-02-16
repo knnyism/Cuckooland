@@ -1,17 +1,5 @@
 #include <entities/Map.h>
 
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
-#include <assimp/mesh.h>
-
-#include <Jolt/Physics/Collision/Shape/MeshShape.h>
-#include <Jolt/Physics/Body/BodyCreationSettings.h>
-#include <Jolt/Physics/PhysicsSystem.h>
-#include <Jolt/Geometry/Triangle.h>
-
-#include <iostream>
-
 void Map::Load(const char* map_path) {
     model = raylib::Model(map_path);
 
@@ -27,8 +15,8 @@ void Map::Load(const char* map_path) {
         return;
     }
 
-    BodyInterface& body_interface = physics_system->GetBodyInterface();
-    TriangleList triangles;
+    JPH::BodyInterface& body_interface = physics_system->GetBodyInterface();
+    JPH::TriangleList triangles;
 
     for (int i = 0; i < scene->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[i];
@@ -37,20 +25,17 @@ void Map::Load(const char* map_path) {
             aiFace face = mesh->mFaces[j];
 
             triangles.push_back(
-                Triangle(
-                    Float3(mesh->mVertices[face.mIndices[0]].x, mesh->mVertices[face.mIndices[0]].y, mesh->mVertices[face.mIndices[0]].z),
-                    Float3(mesh->mVertices[face.mIndices[1]].x, mesh->mVertices[face.mIndices[1]].y, mesh->mVertices[face.mIndices[1]].z),
-                    Float3(mesh->mVertices[face.mIndices[2]].x, mesh->mVertices[face.mIndices[2]].y, mesh->mVertices[face.mIndices[2]].z)
+                JPH::Triangle(
+                    JPH::Float3(mesh->mVertices[face.mIndices[0]].x, mesh->mVertices[face.mIndices[0]].y, mesh->mVertices[face.mIndices[0]].z),
+                    JPH::Float3(mesh->mVertices[face.mIndices[1]].x, mesh->mVertices[face.mIndices[1]].y, mesh->mVertices[face.mIndices[1]].z),
+                    JPH::Float3(mesh->mVertices[face.mIndices[2]].x, mesh->mVertices[face.mIndices[2]].y, mesh->mVertices[face.mIndices[2]].z)
                 )
             );
         }
     }
 
-    BodyCreationSettings creationSettings(BodyCreationSettings(new MeshShapeSettings(triangles), RVec3::sZero(), Quat::sRotation(Vec3::sAxisX(), 0.25f * JPH_PI), EMotionType::Static, Layers::NON_MOVING));
-    Body* meshBody = body_interface.CreateBody(creationSettings);
-    body_interface.AddBody(meshBody->GetID(), EActivation::DontActivate);
-
-    bodyId = meshBody->GetID();
+    JPH::BodyCreationSettings creationSettings(JPH::BodyCreationSettings(new JPH::MeshShapeSettings(triangles), JPH::RVec3::sZero(), JPH::Quat::sIdentity(), JPH::EMotionType::Static, Layers::NON_MOVING));
+    bodyId = body_interface.CreateAndAddBody(creationSettings, JPH::EActivation::Activate);
 }
 
 void Map::Tick() {
