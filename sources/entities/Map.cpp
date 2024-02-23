@@ -3,6 +3,18 @@
 void Map::Load(const char* map_path) {
     model = raylib::Model(map_path);
 
+    /*
+    for (int i = 0; i < model.materialCount; i++) {
+        model.materials[i].shader = *shader;
+
+        model.materials[i].maps[MATERIAL_MAP_ALBEDO].color = raylib::Color(255, 255, 255, 255);
+        model.materials[i].maps[MATERIAL_MAP_METALNESS].value = 0.0f;
+        model.materials[i].maps[MATERIAL_MAP_ROUGHNESS].value = 0.0f;
+        model.materials[i].maps[MATERIAL_MAP_OCCLUSION].value = 1.0f;
+        model.materials[i].maps[MATERIAL_MAP_EMISSION].color = raylib::Color(255, 162, 0, 255);
+    }
+    */
+
     // Now we need to load the map into the physics system
     // TODO: Assimp is great, although maybe we could use raylib here? It would let us avoid parsing the model twice
 
@@ -16,7 +28,8 @@ void Map::Load(const char* map_path) {
     }
 
     JPH::BodyInterface& body_interface = physics_system->GetBodyInterface();
-    JPH::TriangleList triangles;
+
+    TriangleList triangles;
 
     for (int i = 0; i < scene->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[i];
@@ -25,17 +38,17 @@ void Map::Load(const char* map_path) {
             aiFace face = mesh->mFaces[j];
 
             triangles.push_back(
-                JPH::Triangle(
-                    JPH::Float3(mesh->mVertices[face.mIndices[0]].x, mesh->mVertices[face.mIndices[0]].y, mesh->mVertices[face.mIndices[0]].z),
-                    JPH::Float3(mesh->mVertices[face.mIndices[1]].x, mesh->mVertices[face.mIndices[1]].y, mesh->mVertices[face.mIndices[1]].z),
-                    JPH::Float3(mesh->mVertices[face.mIndices[2]].x, mesh->mVertices[face.mIndices[2]].y, mesh->mVertices[face.mIndices[2]].z)
+                Triangle(
+                    Float3(mesh->mVertices[face.mIndices[0]].x, mesh->mVertices[face.mIndices[0]].y, mesh->mVertices[face.mIndices[0]].z),
+                    Float3(mesh->mVertices[face.mIndices[1]].x, mesh->mVertices[face.mIndices[1]].y, mesh->mVertices[face.mIndices[1]].z),
+                    Float3(mesh->mVertices[face.mIndices[2]].x, mesh->mVertices[face.mIndices[2]].y, mesh->mVertices[face.mIndices[2]].z)
                 )
             );
         }
     }
 
-    JPH::BodyCreationSettings creationSettings(JPH::BodyCreationSettings(new JPH::MeshShapeSettings(triangles), JPH::RVec3::sZero(), JPH::Quat::sIdentity(), JPH::EMotionType::Static, Layers::NON_MOVING));
-    bodyId = body_interface.CreateAndAddBody(creationSettings, JPH::EActivation::Activate);
+    BodyCreationSettings creationSettings(BodyCreationSettings(new MeshShapeSettings(triangles), RVec3::sZero(), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING));
+    body_interface.CreateAndAddBody(creationSettings, JPH::EActivation::Activate);
 }
 
 void Map::Tick() {

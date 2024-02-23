@@ -1,8 +1,8 @@
 #pragma once
 
+#include <game.h>
 #include <raylib-cpp.hpp>
 #include <physics.h>
-#include <entity.h>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -14,7 +14,6 @@
 class Map : public Entity {
 public:
     raylib::Model model;
-    JPH::BodyID bodyId;
 
     void Load(const char* path);
     void Tick() override;
