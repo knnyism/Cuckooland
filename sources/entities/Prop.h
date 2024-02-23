@@ -1,30 +1,14 @@
 #pragma once
 
-#include <raylib-cpp.hpp>
-#include <physics.h>
-#include <entity.h>
-
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
-#include <assimp/mesh.h>
-
-#include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
-#include <iostream>
+#include <game.h>
 
 class Prop : public Entity {
 public:
-    raylib::Model model;
-    JPH::BodyID bodyId;
+    game::Model model;
 
-    Vector3 position;
-    Quaternion rotation;
+    void Load(const string path, Vec3 pos = Vec3::sZero(), Quat rot = Quat::sIdentity(), f32 overrideMass = -1.0f);
 
-    void Load(const char* path);
     void Tick() override;
     void Render() override;
-private:
-    Vector3 raylib_position;
-    Vector3 raylib_rotationAxis;
-    float raylib_rotationAngle;
+    void Destroy() override;
 };
