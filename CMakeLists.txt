@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.26)
 project(cuckooland CXX)
+
 # Requires C++ 17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -21,6 +22,7 @@ if (NOT raylib_FOUND)
         GIT_TAG 5.0
         GIT_SHALLOW 1
     )
+    set(BUILD_EXAMPLES OFF CACHE INTERNAL "")
     FetchContent_MakeAvailable(raylib)
 endif()
 
@@ -35,6 +37,8 @@ if (NOT raylib_cpp_FOUND)
     FetchContent_MakeAvailable(raylib_cpp)
 endif()
 
+# assimp
+
 find_package(assimp QUIET)
 if (NOT assimp_FOUND)
     include(FetchContent)
@@ -47,6 +51,7 @@ if (NOT assimp_FOUND)
 endif()
 
 # jolt
+
 set(DOUBLE_PRECISION OFF)
 set(GENERATE_DEBUG_SYMBOLS ON)
 set(CROSS_PLATFORM_DETERMINISTIC OFF)
