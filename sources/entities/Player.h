@@ -1,46 +1,54 @@
 #pragma once
 
-#include <entity.h>
-#include <physics.h>
+#include <game.h>
 #include <flavor.h>
 #include <globals.h>
+#include <physics.h>
+#include <interpolation.h>
 
 #include <Jolt/Physics/Character/Character.h>
 #include <Jolt/Physics/Character/CharacterVirtual.h>
-#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 
-struct InterpState {
-    f64 lastTime;
-    f64 nextTime;
+const u32 PLAYER_ACCELERATE = 150;
+const u32 PLAYER_MAX_SPEED = 15;
+const u32 PLAYER_FRICTION = 13;
 
-    JPH::Vec3 lastPosition;
-    JPH::Vec3 nextPosition;
-};
+const u32 PLAYER_ACCELERATE_AIR = 200;
+const f32 PLAYER_GAIN_AIR = 1;
+const u32 PLAYER_MAX_SPEED_AIR = 15;
+const f32 PLAYER_FRICTION_AIR = 0.2;
+
+const u32 PLAYER_IMPULSE_JUMP = 17;
+
+using namespace JPH;
 
 class Player : public Entity {
 public:
-    const f32 cameraHeightStanding = 4.5f;
-    const f32 characterHeightStanding = 4.0f;
-    const f32 characterRadiusStanding = 1.0f;
+    bool isGrounded = false;
+    bool isCrouching = false;
+    bool wasCrouching = false;
 
-    const f32 cameraHeightCrouching = 3.0f;
-    const f32 characterHeightCrouching = 4.0f;
-    const f32 characterRadiusCrouching = 1.0f;
+    const f32 cameraHeightStanding = 2.0f;
+    const f32 characterHeightStanding = 1.5f;
+    const f32 characterRadiusStanding = 2.0f;
+
+    const f32 cameraHeightCrouching = 1.0f;
+    const f32 characterHeightCrouching = 0.5f;
+    const f32 characterRadiusCrouching = 2.0f;
 
     f32 lookAngleX = 0.0f;
     f32 lookAngleY = 0.0f;
 
+    Ref<Shape> standingShape = RotatedTranslatedShapeSettings(Vec3(0, 0.5f * characterHeightStanding + characterRadiusStanding, 0), Quat::sIdentity(), new CapsuleShape(0.5f * characterHeightStanding, characterRadiusStanding)).Create().Get();
+    Ref<Shape> crouchingShape = RotatedTranslatedShapeSettings(Vec3(0, 0.5f * characterHeightCrouching + characterRadiusCrouching, 0), Quat::sIdentity(), new CapsuleShape(0.5f * characterHeightCrouching, characterRadiusCrouching)).Create().Get();
+
+    MoveHelper moveHelper = MoveHelper(Vec3(0, 5, 0));
+
     InterpState interpState;
-
-    JPH::CharacterVirtual* character;
-
-    void OnContactAdded(const JPH::CharacterVirtual* inCharacter, const JPH::BodyID& inBodyID2, const JPH::SubShapeID& inSubShapeID2, JPH::RVec3Arg inContactPosition, JPH::Vec3Arg inContactNormal, JPH::CharacterContactSettings& ioSettings);
 
     void Spawn();
     void Tick() override;
     void Render() override;
-private:
-    JPH::Vec3 MoveAir(JPH::Vec3 moveDirection, JPH::Vec3 velocity);
-    JPH::Vec3 MoveGround(JPH::Vec3 moveDirection, JPH::Vec3 velocity);
 };

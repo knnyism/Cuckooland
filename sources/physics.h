@@ -1,5 +1,7 @@
 #pragma once
 
+#include <globals.h>
+
 #include <Jolt/Jolt.h>
 
 // Jolt includes
@@ -9,25 +11,25 @@
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/PhysicsSettings.h>
 #include <Jolt/Core/JobSystemThreadPool.h>
+#include <Jolt/Physics/Collision/ShapeCast.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
+#include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 
 // STL includes
 #include <iostream>
 #include <cstdarg>
 #include <thread>
+#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 
 // If you want your code to compile using single or double precision write 0.0_r to get a Real value that compiles to double or float depending if JPH_DOUBLE_PRECISION is set or not.
-using namespace JPH::literals;
-
-// We're also using STL classes in this example
-using namespace std;
+using namespace JPH;
 
 namespace Layers
 {
-    static constexpr JPH::ObjectLayer NON_MOVING = 0;
-    static constexpr JPH::ObjectLayer MOVING = 1;
-    static constexpr JPH::ObjectLayer NUM_LAYERS = 2;
+    static constexpr ObjectLayer NON_MOVING = 0;
+    static constexpr ObjectLayer MOVING = 1;
+    static constexpr ObjectLayer NUM_LAYERS = 2;
 };
 
 // Each broadphase layer results in a separate bounding volume tree in the broad phase. You at least want to have
@@ -37,16 +39,16 @@ namespace Layers
 // your broadphase layers define JPH_TRACK_BROADPHASE_STATS and look at the stats reported on the TTY.
 namespace BroadPhaseLayers
 {
-    static constexpr JPH::BroadPhaseLayer NON_MOVING(0);
-    static constexpr JPH::BroadPhaseLayer MOVING(1);
-    static constexpr JPH::uint NUM_LAYERS(2);
+    static constexpr BroadPhaseLayer NON_MOVING(0);
+    static constexpr BroadPhaseLayer MOVING(1);
+    static constexpr uint NUM_LAYERS(2);
 };
 
 /// Class that determines if two object layers can collide
-class ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter
+class ObjectLayerPairFilterImpl : public ObjectLayerPairFilter
 {
 public:
-    virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override
+    virtual bool ShouldCollide(ObjectLayer inObject1, ObjectLayer inObject2) const override
     {
         switch (inObject1)
         {
@@ -63,7 +65,7 @@ public:
 
 // BroadPhaseLayerInterface implementation
 // This defines a mapping between object and broadphase layers.
-class BPLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface
+class BPLayerInterfaceImpl final : public BroadPhaseLayerInterface
 {
 public:
     BPLayerInterfaceImpl()
@@ -73,38 +75,38 @@ public:
         mObjectToBroadPhase[Layers::MOVING] = BroadPhaseLayers::MOVING;
     }
 
-    virtual JPH::uint GetNumBroadPhaseLayers() const override
+    virtual uint GetNumBroadPhaseLayers() const override
     {
         return BroadPhaseLayers::NUM_LAYERS;
     }
 
-    virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override
+    virtual BroadPhaseLayer GetBroadPhaseLayer(ObjectLayer inLayer) const override
     {
         JPH_ASSERT(inLayer < Layers::NUM_LAYERS);
         return mObjectToBroadPhase[inLayer];
     }
 
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
-    virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer inLayer) const override
+    virtual const char* GetBroadPhaseLayerName(BroadPhaseLayer inLayer) const override
     {
-        switch ((JPH::BroadPhaseLayer::Type)inLayer)
+        switch ((BroadPhaseLayer::Type)inLayer)
         {
-        case (JPH::BroadPhaseLayer::Type)BroadPhaseLayers::NON_MOVING:	return "NON_MOVING";
-        case (JPH::BroadPhaseLayer::Type)BroadPhaseLayers::MOVING:		return "MOVING";
+        case (BroadPhaseLayer::Type)BroadPhaseLayers::NON_MOVING:	return "NON_MOVING";
+        case (BroadPhaseLayer::Type)BroadPhaseLayers::MOVING:		return "MOVING";
         default:													JPH_ASSERT(false); return "INVALID";
         }
     }
 #endif // JPH_EXTERNAL_PROFILE || JPH_PROFILE_ENABLED
 
 private:
-    JPH::BroadPhaseLayer	mObjectToBroadPhase[Layers::NUM_LAYERS];
+    BroadPhaseLayer	mObjectToBroadPhase[Layers::NUM_LAYERS];
 };
 
 /// Class that determines if an object layer can collide with a broadphase layer
-class ObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFilter
+class ObjectVsBroadPhaseLayerFilterImpl : public ObjectVsBroadPhaseLayerFilter
 {
 public:
-    virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override
+    virtual bool ShouldCollide(ObjectLayer inLayer1, BroadPhaseLayer inLayer2) const override
     {
         switch (inLayer1)
         {
@@ -120,8 +122,37 @@ public:
 };
 
 void TraceImpl(const char* inFMT, ...);
-bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, JPH::uint inLine);
+bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, uint inLine);
 
-inline JPH::PhysicsSystem* physics_system;
-inline JPH::TempAllocatorImpl* temp_allocator;
-inline JPH::JobSystemThreadPool* job_system;
+struct TraceResult {
+    bool hit = false;
+    bool startedStuck = false;
+    f32 fraction = 1.0f;
+    f32 depth;
+    BodyID bodyId;
+    Vec3 point;
+    Vec3 planeNormal;
+    Vec3 normal;
+};
+
+// MoveHelper is basically a virtual physics body that casts a shape to where it is headed
+// We can use it to have great precision, prevent ghost collisions and overall smoother locomotion
+// Currently only supports MoveAndSlide because that's all I need for now
+class MoveHelper {
+public:
+    Vec3 position;
+    Vec3 velocity;
+
+    MoveHelper(Vec3 position = Vec3(0, 0, 0), Vec3 velocity = Vec3::sZero()) : position(position), velocity(velocity) {};
+
+    void MoveAndSlide(Ref<Shape> shape);
+private:
+};
+
+// TraceShape is pretty much just MoveHelper without a body, used for quick collision checks e.g. ground checks
+TraceResult TraceShape(Ref<Shape> shape, Vec3 origin, Vec3 motion);
+
+inline PhysicsSystem* physics_system;
+inline BodyInterface* body_interface;
+inline TempAllocatorImpl* temp_allocator;
+inline JobSystemThreadPool* job_system;
