@@ -1,5 +1,7 @@
 #include <game.h>
 
+Mat44 cameraMatrix;
+
 Entity* FindEntity(EntityId id)
 {
     Entity* ent = entities.buckets[id.bucket]->data[id.index];
@@ -19,37 +21,31 @@ void DestroyEntity(Entity* ent)
 }
 
 namespace game {
-    void Model::Load(string path, Vec3 position, Quat rotation, f32 overrideMass, EMotionType motionType) {
-        string assetsPath = "C:/Users/canis/Repositories/Cuckooland/assets/";
-        Assimp::Importer importer;
+    Sound3D* playingSound3Ds[MAX_SOUNDS];
 
-        string modelPath = assetsPath + "models/" + path + ".glb";
-        string physicsPath = assetsPath + "models/" + path + ".p.glb";
+    void SetCameraMatrix(Mat44 matrix) {
+        cameraMatrix = matrix;
 
-        raylibModel = raylib::Model(modelPath);
+        Vec3 pos = matrix.GetTranslation();
+        Quat rot = matrix.GetRotation().GetQuaternion();
 
-        if (!std::filesystem::exists(physicsPath))
-            physicsPath = modelPath;
+        Vec3 target = pos + rot * Vec3::sAxisZ();
+        Vec3 up = rot * Vec3::sAxisY();
 
-        const aiScene* scene = importer.ReadFile(physicsPath, aiProcess_Triangulate);
+        camera->SetPosition({ pos.GetX(), pos.GetY(), pos.GetZ() });
+        camera->SetTarget({ target.GetX() , target.GetY(), target.GetZ() });
+        camera->SetUp({ up.GetX(), up.GetY(), up.GetZ() });
+    }
 
-        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-            std::cout << "ERROR: ASSIMP: " << importer.GetErrorString() << std::endl;
-            return;
-        }
+    Mat44 GetCameraMatrix() {
+        return cameraMatrix;
+    }
 
-        Array<Vec3> propShape;
+    void Model::Load(string path, Vec3 position, Quat rotation, f32 overrideMass, f32 overrideFriction, EMotionType motionType, ObjectLayer layer) {
+        raylibModel = GetModel(path);
+        BodyCreationSettings bcs = BodyCreationSettings(new ConvexHullShapeSettings(*GetShape(path)), position, rotation, motionType, layer);
 
-        for (int i = 0; i < scene->mNumMeshes; i++) {
-            aiMesh* mesh = scene->mMeshes[i];
-
-            for (int j = 0; j < mesh->mNumVertices; j++) {
-                aiVector3D vertex = mesh->mVertices[j];
-                propShape.push_back(Vec3(vertex.x, vertex.y, vertex.z));
-            }
-        }
-
-        BodyCreationSettings bcs = BodyCreationSettings(new ConvexHullShapeSettings(propShape), position, rotation, motionType, Layers::MOVING);
+        std::cout << "Layer: " << layer << std::endl;
 
         if (overrideMass != -1.0f) {
             std::cout << "Overriding mass: " << overrideMass << std::endl;
@@ -57,29 +53,97 @@ namespace game {
             bcs.mMassPropertiesOverride.mMass = overrideMass;
         }
 
-        bodyId = body_interface->CreateAndAddBody(bcs, EActivation::Activate);
-    }
+        bcs.mFriction = overrideFriction;
 
+        //bcs.mMotionQuality = EMotionQuality::LinearCast;
+
+        body = body_interface->CreateBody(bcs);
+        bodyId = body->GetID();
+
+        body_interface->AddBody(bodyId, EActivation::Activate);
+    }
     void Model::Tick() {
-        Vec3 position = body_interface->GetPosition(bodyId);
-        Quat rotation = body_interface->GetRotation(bodyId);
-
-        Vec3 axis;
-        f32 angle;
-        rotation.GetAxisAngle(axis, angle);
-
-        interpState.Update(GetTime(), position, axis, angle);
+        positionState.Set(body_interface->GetPosition(bodyId));
+        rotationState.Set(body_interface->GetRotation(bodyId));
     }
-
     void Model::Render() {
-        Vec3 position = interpState.GetPosition();
-        Vec3 rotationAxis = interpState.GetRotationAxis();
-        f32 rotationAngle = interpState.GetRotationAngle();
+        Vec3 position = positionState.Get();
+        Quat rotation = rotationState.Get().Normalized(); // Needed cause... IDK GetAxisAngle throws a fit
 
-        raylibModel.Draw(
+        Vec3 rotationAxis;
+        f32 rotationAngle;
+        rotation.GetAxisAngle(rotationAxis, rotationAngle);
+
+        raylibModel->Draw(
             { position.GetX(), position.GetY(), position.GetZ() },
             { rotationAxis.GetX(), rotationAxis.GetY(), rotationAxis.GetZ() },
             rotationAngle * RAD2DEG
         );
+    }
+
+    void Sound::Play() {
+        if (maxVariations > 1)
+        {
+            soundIndex = rand() % maxInstances;
+        }
+        else
+        {
+            soundIndex++;
+            if (soundIndex >= maxInstances)
+                soundIndex = 0;
+        }
+
+        currentSound = soundArray[soundIndex++];
+
+        currentSound->SetVolume(volume);
+        currentSound->Play();
+    }
+
+    void Sound::Stop() {
+
+    }
+
+    void Sound3D::Play() {
+        for (u8 i = 0; i < maxInstances; i++) {
+            if (soundArray[i] == nullptr)
+                continue;
+
+            if (soundArray[i]->IsPlaying())
+                continue;
+
+            playingSound3Ds[i] = this;
+        }
+
+        Sound::Play();
+        Update();
+    }
+
+    void Sound3D::Update() {
+        Vec3 cameraPos = cameraMatrix.GetTranslation();
+
+        f32 distance = (cameraPos - position).Length();
+        f32 normalizedDistance = min(distance / maxDistance, 1.0f);
+        f32 distanceVolume = 1.0f - normalizedDistance;
+
+        // Calculate stereo panning based on the relative position of the sound source and the camera
+        Vec3 soundDirection = (position - cameraPos).Normalized();
+        f32 panning = soundDirection.Dot(cameraMatrix.GetAxisX());
+
+        // Set volume and panning
+        currentSound->SetVolume(volume * distanceVolume);
+        currentSound->SetPan(panning + 0.5f);
+    }
+
+    void Sound3D::Stop() {
+
+    }
+
+    void UpdateSound3Ds() {
+        for (u8 i = 0; i < MAX_SOUNDS; i++) {
+            Sound3D* sound = playingSound3Ds[i];
+            if (sound != nullptr && sound->currentSound->IsPlaying()) {
+                sound->Update();
+            }
+        }
     }
 }
