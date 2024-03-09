@@ -1,3 +1,5 @@
+// I came up with this file to make it easier to change the data types used in the engine.
+
 #pragma once
 
 #include "stdint.h"
