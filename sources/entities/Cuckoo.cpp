@@ -38,7 +38,7 @@ void Cuckoo::Tick() {
 }
 
 void Cuckoo::Render() {
-    if (acquired) {
+    if (acquired && playLongAnimation) {
 
         Mat44 worldMatrix = game::GetCameraMatrix() * Mat44::sRotationTranslation(cameraRelativeMatrix.GetRotation().GetQuaternion(), cameraRelativeMatrix.GetTranslation() * 0.1f);
         Mat44 targetMatrix = game::GetCameraMatrix() * Mat44::sTranslation(Vec3(0, -0.05, 0.6));
