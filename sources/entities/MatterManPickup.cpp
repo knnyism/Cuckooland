@@ -2,7 +2,9 @@
 
 void MatterManPickup::Spawn(Vec3 position) {
     prop = CreateEntity<Prop>();
-    prop->Load("matterman", position, Quat::sEulerAngles(Vec3(0, -PI / 2, -PI / 2)), 100000.0f);
+    prop->Load("matterman", position, Quat::sRotation(Vec3::sAxisY(), -PI / 2), 1000.0f);
+
+    GetModel("v_matman"); // Load the viewmodel so later on MatterMan entity doesn't have to load it when a player picks us up
 }
 
 void MatterManPickup::Destroy() {
@@ -18,7 +20,7 @@ void MatterManPickup::Tick() {
                 f32 distance = (player->moveHelper.position - body_interface->GetPosition(prop->model.bodyId)).Length();
 
                 if (distance < 5.0f) {
-                    CreateEntity<MatterMan>();
+                    CreateEntity<MatterMan>()->Spawn(player);
                     DestroyEntity(this);
 
                     break;
