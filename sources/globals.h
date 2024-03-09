@@ -1,4 +1,9 @@
-// Header file for global variables
+/*
+* globals.h
+*
+* Contains global variables and functions that are used throughout the game.
+* This is particularly useful for variables that are used in multiple files, such as the tick rate.
+*/
 
 #pragma once
 
@@ -11,7 +16,15 @@ inline const f32 TICK_DURATION = 1.0f / TICK_RATE;
 inline u32 currentTick = 0;
 inline f64 startTime = GetTime();
 
+inline u32 cuckooCount = 0;
+
+inline f64 scrollDirection = 0;
 inline raylib::Camera* camera;
 
-u64 CalculateTickFromTime(f64 currentTime);
-f64 CalculateTimeFromTick(s64 tick);
+inline u64 CalculateTickFromTime(f64 currentTime) {
+    return std::ceil((currentTime - startTime) * TICK_RATE);
+};
+
+inline f64 CalculateTimeFromTick(s64 tick) {
+    return (f64)tick / (f64)TICK_RATE;
+}
