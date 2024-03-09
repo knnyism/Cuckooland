@@ -1,3 +1,11 @@
+/*
+* physics.h
+*
+* This file is responsible for initalizing the Jolt Physics library; it also includes MoveHelper and TraceShape
+* MoveHelper is a class that casts a shape to where it is headed, used for precise locomotion
+* TraceShape/Ray is a function that casts a shape to a point and returns the result
+*/
+
 #pragma once
 
 #include <globals.h>
@@ -15,6 +23,8 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
+#include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/RayCast.h>
 
 // STL includes
 #include <iostream>
@@ -22,27 +32,30 @@
 #include <thread>
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 
-// If you want your code to compile using single or double precision write 0.0_r to get a Real value that compiles to double or float depending if JPH_DOUBLE_PRECISION is set or not.
+JPH_SUPPRESS_WARNINGS
+
 using namespace JPH;
 
 namespace Layers
 {
     static constexpr ObjectLayer NON_MOVING = 0;
     static constexpr ObjectLayer MOVING = 1;
-    static constexpr ObjectLayer NUM_LAYERS = 2;
+    static constexpr ObjectLayer PLAYER = 2;
+    static constexpr ObjectLayer NO_GRAB = 3;
+    static constexpr ObjectLayer LADDER = 4;
+    static constexpr ObjectLayer NUM_LAYERS = 5;
 };
 
-// Each broadphase layer results in a separate bounding volume tree in the broad phase. You at least want to have
-// a layer for non-moving and moving objects to avoid having to update a tree full of static objects every frame.
-// You can have a 1-on-1 mapping between object layers and broadphase layers (like in this case) but if you have
-// many object layers you'll be creating many broad phase trees, which is not efficient. If you want to fine tune
-// your broadphase layers define JPH_TRACK_BROADPHASE_STATS and look at the stats reported on the TTY.
 namespace BroadPhaseLayers
 {
     static constexpr BroadPhaseLayer NON_MOVING(0);
     static constexpr BroadPhaseLayer MOVING(1);
-    static constexpr uint NUM_LAYERS(2);
+    static constexpr BroadPhaseLayer PLAYER(2);
+    static constexpr BroadPhaseLayer NO_GRAB(3);
+    static constexpr BroadPhaseLayer LADDER(4);
+    static constexpr uint NUM_LAYERS(5);
 };
+
 
 /// Class that determines if two object layers can collide
 class ObjectLayerPairFilterImpl : public ObjectLayerPairFilter
@@ -54,8 +67,14 @@ public:
         {
         case Layers::NON_MOVING:
             return inObject2 == Layers::MOVING; // Non moving only collides with moving
-        case Layers::MOVING:
-            return true; // Moving collides with everything
+        case (Layers::MOVING):
+            return true;
+        case (Layers::PLAYER):
+            return true;
+        case (Layers::NO_GRAB):
+            return true;
+        case (Layers::LADDER):
+            return true;
         default:
             JPH_ASSERT(false);
             return false;
@@ -73,6 +92,9 @@ public:
         // Create a mapping table from object to broad phase layer
         mObjectToBroadPhase[Layers::NON_MOVING] = BroadPhaseLayers::NON_MOVING;
         mObjectToBroadPhase[Layers::MOVING] = BroadPhaseLayers::MOVING;
+        mObjectToBroadPhase[Layers::PLAYER] = BroadPhaseLayers::PLAYER;
+        mObjectToBroadPhase[Layers::NO_GRAB] = BroadPhaseLayers::NO_GRAB;
+        mObjectToBroadPhase[Layers::LADDER] = BroadPhaseLayers::LADDER;
     }
 
     virtual uint GetNumBroadPhaseLayers() const override
@@ -93,6 +115,9 @@ public:
         {
         case (BroadPhaseLayer::Type)BroadPhaseLayers::NON_MOVING:	return "NON_MOVING";
         case (BroadPhaseLayer::Type)BroadPhaseLayers::MOVING:		return "MOVING";
+        case (BroadPhaseLayer::Type)BroadPhaseLayers::PLAYER:		return "PLAYER";
+        case (BroadPhaseLayer::Type)BroadPhaseLayers::NO_GRAB:		return "NO_GRAB";
+        case (BroadPhaseLayer::Type)BroadPhaseLayers::LADDER:		return "LADDER";
         default:													JPH_ASSERT(false); return "INVALID";
         }
     }
@@ -112,7 +137,13 @@ public:
         {
         case Layers::NON_MOVING:
             return inLayer2 == BroadPhaseLayers::MOVING;
-        case Layers::MOVING:
+        case (Layers::MOVING):
+            return true;
+        case (Layers::PLAYER):
+            return true;
+        case (Layers::NO_GRAB):
+            return true;
+        case (Layers::LADDER):
             return true;
         default:
             JPH_ASSERT(false);
@@ -142,15 +173,19 @@ class MoveHelper {
 public:
     Vec3 position;
     Vec3 velocity;
+    Body* body;
 
-    MoveHelper(Vec3 position = Vec3(0, 0, 0), Vec3 velocity = Vec3::sZero()) : position(position), velocity(velocity) {};
+    MoveHelper(Vec3 position = Vec3(0, 0, 0), Vec3 velocity = Vec3::sZero(), Body* body = new Body()) : position(position), velocity(velocity), body(body) {};
 
-    void MoveAndSlide(Ref<Shape> shape);
+    void MoveAndSlide(Ref<const Shape> shape);
 private:
 };
 
 // TraceShape is pretty much just MoveHelper without a body, used for quick collision checks e.g. ground checks
-TraceResult TraceShape(Ref<Shape> shape, Vec3 origin, Vec3 motion);
+TraceResult TraceShape(Ref<const Shape> shape, Vec3 origin, Vec3 motion, BodyFilter& bodyFilter = BodyFilter(), ObjectLayerFilter& objectLayerFilter = ObjectLayerFilter());
+TraceResult TraceShape(Ref<const Shape> shape, Mat44 matrix, Vec3 motion, BodyFilter& bodyFilter = BodyFilter(), ObjectLayerFilter& objectLayerFilter = ObjectLayerFilter());
+
+TraceResult TraceRay(Vec3 from, Vec3 to, BodyFilter& bodyFilter = BodyFilter(), ObjectLayerFilter& objectLayerFilter = ObjectLayerFilter());
 
 inline PhysicsSystem* physics_system;
 inline BodyInterface* body_interface;

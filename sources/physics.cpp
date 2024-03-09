@@ -15,21 +15,23 @@ void TraceImpl(const char* inFMT, ...)
 bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, JPH::uint inLine)
 {
     // Print to the TTY
-    std::cout << "JOLT ERROR: " << inFile << ":" << inLine << ": (" << inExpression << ") " << (inMessage != nullptr ? inMessage : "") << std::endl;
+    std::cout << "JOLT: ERROR: " << inFile << ":" << inLine << ": (" << inExpression << ") " << (inMessage != nullptr ? inMessage : "") << std::endl;
 
     // Breakpoint
-    return true;
+    return false;
 };
 
-TraceResult TraceShape(Ref<Shape> shape, Vec3 origin, Vec3 motion) {
+TraceResult TraceShape(Ref<const Shape> shape, Mat44 matrix, Vec3 motion, BodyFilter& bodyFilter, ObjectLayerFilter& objectLayerFilter) {
     TraceResult traceResult;
-
     ClosestHitCollisionCollector<CastShapeCollector> cast_shape_collector;
     physics_system->GetNarrowPhaseQuery().CastShape(
-        RShapeCast(shape, Vec3::sReplicate(1), RMat44::sTranslation(origin), motion),
+        RShapeCast(shape, Vec3::sReplicate(1), matrix, motion),
         ShapeCastSettings(),
         RVec3::sZero(),
-        cast_shape_collector
+        cast_shape_collector,
+        {},
+        objectLayerFilter,
+        bodyFilter
     );
 
     if (cast_shape_collector.HadHit())
@@ -45,16 +47,43 @@ TraceResult TraceShape(Ref<Shape> shape, Vec3 origin, Vec3 motion) {
     }
 
     return traceResult;
+};
+
+TraceResult TraceShape(Ref<const Shape> shape, Vec3 origin, Vec3 motion, BodyFilter& bodyFilter, ObjectLayerFilter& objectLayerFilter) {
+    return TraceShape(shape, Mat44::sTranslation(origin), motion, bodyFilter, objectLayerFilter);
 }
 
-void MoveHelper::MoveAndSlide(Ref<Shape> shape) {
+TraceResult TraceRay(Vec3 from, Vec3 direction, BodyFilter& bodyFilter, ObjectLayerFilter& objectLayerFilter) {
+    TraceResult traceResult;
+
+    RayCastResult rayCastResult;
+    bool hit = physics_system->GetNarrowPhaseQuery().CastRay(
+        RRayCast(from, direction),
+        rayCastResult,
+        {},
+        objectLayerFilter,
+        bodyFilter
+    );
+
+    if (hit) {
+        traceResult.hit = true;
+        traceResult.bodyId = rayCastResult.mBodyID;
+        traceResult.point = from + direction * rayCastResult.mFraction;
+        traceResult.fraction = rayCastResult.mFraction;
+    }
+
+    return traceResult;
+}
+
+
+void MoveHelper::MoveAndSlide(Ref<const Shape> shape) {
     f32 travelLeft = 1.0f;
     int iterations = 10; // TODO: why does BoxShape cause a crash here
     BodyInterface& bodyInterface = physics_system->GetBodyInterface();
 
     while (travelLeft > 0 && iterations > 0) {
         const Vec3 rayDirection = velocity * TICK_DURATION * travelLeft;
-        const TraceResult traceResult = TraceShape(shape, position, rayDirection);
+        const TraceResult traceResult = TraceShape(shape, position, rayDirection, IgnoreSingleBodyFilter(body->GetID()));
 
         if (!traceResult.hit) {
             position = position + rayDirection;
@@ -69,10 +98,6 @@ void MoveHelper::MoveAndSlide(Ref<Shape> shape) {
 
         position = position + rayDirection * traceResult.fraction + traceResult.normal * 0.001f;
         velocity = desiredMotion * velocityLength;
-
-        if (bodyInterface.GetMotionType(traceResult.bodyId) == EMotionType::Dynamic) {
-            bodyInterface.AddImpulse(traceResult.bodyId, -traceResult.normal * 10000.0f * velocityLength, traceResult.point);
-        }
 
         travelLeft -= traceResult.fraction;
         iterations--;
