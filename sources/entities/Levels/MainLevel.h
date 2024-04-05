@@ -6,6 +6,7 @@
 #include <entities/Door.h>
 #include <entities/Prop.h>
 #include <entities/SlidingDoor.h>
+#include <entities/Skybox.h>
 #include <entities/MatterMan.h>
 #include <entities/Elevator.h>
 #include <entities/Void.h>

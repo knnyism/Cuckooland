@@ -35,10 +35,6 @@ void main() {
     // Register allocation hook
     JPH::RegisterDefaultAllocator();
 
-    // Install callbacks
-    JPH::Trace = TraceImpl;
-    JPH::JPH_IF_ENABLE_ASSERTS(AssertFailed = AssertFailedImpl;);
-
     JPH::Factory::sInstance = new JPH::Factory();
 
     JPH::RegisterTypes();
