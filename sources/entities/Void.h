@@ -3,6 +3,7 @@
 #include <game.h>
 
 #include <entities/Player.h>
+#include <entities/Prop.h>
 
 class Void : public Entity {
 public:
