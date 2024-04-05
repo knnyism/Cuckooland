@@ -25,6 +25,10 @@ void LoadLighting() {
     shader->locs[SHADER_LOC_MATRIX_MVP] = shader->GetLocation("mvp");
     shader->locs[SHADER_LOC_VECTOR_VIEW] = shader->GetLocation("camPos");
 
+    float fogDensity = 0.02f;
+    int fogDensityLoc = shader->GetLocation("fogDensity");
+    shader->SetValue(fogDensityLoc, &fogDensity, SHADER_UNIFORM_FLOAT);
+
     albedoDefault = LoadTextureFromImage(GenImageColor(1, 1, raylib::WHITE));
     aoDefault = LoadTextureFromImage(GenImageColor(1, 1, raylib::WHITE));
     metallicDefault = LoadTextureFromImage(GenImageColor(1, 1, raylib::BLACK));
