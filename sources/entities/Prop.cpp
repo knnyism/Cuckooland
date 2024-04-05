@@ -8,6 +8,7 @@ void Prop::Load(const string path, Vec3 position, Quat rotation, f32 overrideMas
 
 void Prop::Destroy() {
     body_interface->RemoveBody(model.bodyId);
+    body_interface->DestroyBody(model.bodyId);
 }
 
 void Prop::Tick() {
