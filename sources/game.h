@@ -45,6 +45,7 @@ public:
 
     virtual void Tick() {};
     virtual void BeforeCamera() {};
+    virtual void AfterCamera() {};
     virtual void Render() {};
 
     virtual void OnContactAdded(const Body& inBody1, const Body& inBody2, const ContactManifold& inManifold, ContactSettings& ioSettings) {};
@@ -217,6 +218,52 @@ namespace game {
         void Play() override;
         void Stop() override;
         void Update();
+    };
+
+    class UDim {
+    public:
+        f32 scale;
+        f32 offset;
+
+        UDim(f32 scale = 0.0f, f32 offset = 0.0f) : scale(scale), offset(offset) {}
+    };
+
+    class UDim2 {
+    public:
+        UDim x;
+        UDim y;
+
+        UDim2(f32 xScale = 0.0f, f32 xOffset = 0.0f, f32 yScale = 0.0f, f32 yOffset = 0.0f) : x(xScale, xOffset), y(yScale, yOffset) {}
+    };
+
+    template <typename T>
+    class UIObject {
+    public:
+        T object;
+
+        UDim2 position;
+        UDim2 size;
+
+        Vector2 pivot;
+
+        template<typename... Args>
+        UIObject(UDim2 position = UDim2(), UDim2 size = UDim2(), Vector2 pivot = { 0.0f, 0.0f }, Args&&... args) : position(position), size(size), pivot(pivot), object(std::forward<Args>(args)...) {}
+
+        Vector2 GetAbsoluteSize() {
+            return {
+                GetScreenWidth() * size.x.scale + size.x.offset,
+                GetScreenHeight() * size.y.scale + size.y.offset
+            };
+        }
+
+        Vector2 GetAbsolutePosition() {
+            Vector2 absoluteSize = GetAbsoluteSize();
+
+            return {
+                GetScreenWidth() * position.x.scale + position.x.offset - absoluteSize.x * pivot.x,
+                GetScreenHeight() * position.y.scale + position.y.offset - absoluteSize.y * pivot.y
+            };
+        }
     };
 
     void UpdateSound3Ds();
