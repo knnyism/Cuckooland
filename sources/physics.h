@@ -23,6 +23,7 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
+#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 
@@ -30,7 +31,6 @@
 #include <iostream>
 #include <cstdarg>
 #include <thread>
-#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 
 JPH_SUPPRESS_WARNINGS
 
@@ -43,7 +43,8 @@ namespace Layers
     static constexpr ObjectLayer PLAYER = 2;
     static constexpr ObjectLayer NO_GRAB = 3;
     static constexpr ObjectLayer LADDER = 4;
-    static constexpr ObjectLayer NUM_LAYERS = 5;
+    static constexpr ObjectLayer TRIGGER = 5;
+    static constexpr ObjectLayer NUM_LAYERS = 6;
 };
 
 namespace BroadPhaseLayers
@@ -53,7 +54,8 @@ namespace BroadPhaseLayers
     static constexpr BroadPhaseLayer PLAYER(2);
     static constexpr BroadPhaseLayer NO_GRAB(3);
     static constexpr BroadPhaseLayer LADDER(4);
-    static constexpr uint NUM_LAYERS(5);
+    static constexpr BroadPhaseLayer TRIGGER(5);
+    static constexpr uint NUM_LAYERS(6);
 };
 
 
@@ -75,6 +77,8 @@ public:
             return true;
         case (Layers::LADDER):
             return true;
+        case (Layers::TRIGGER):
+            return inObject2 == Layers::PLAYER;
         default:
             JPH_ASSERT(false);
             return false;
@@ -95,6 +99,7 @@ public:
         mObjectToBroadPhase[Layers::PLAYER] = BroadPhaseLayers::PLAYER;
         mObjectToBroadPhase[Layers::NO_GRAB] = BroadPhaseLayers::NO_GRAB;
         mObjectToBroadPhase[Layers::LADDER] = BroadPhaseLayers::LADDER;
+        mObjectToBroadPhase[Layers::TRIGGER] = BroadPhaseLayers::TRIGGER;
     }
 
     virtual uint GetNumBroadPhaseLayers() const override
@@ -118,6 +123,7 @@ public:
         case (BroadPhaseLayer::Type)BroadPhaseLayers::PLAYER:		return "PLAYER";
         case (BroadPhaseLayer::Type)BroadPhaseLayers::NO_GRAB:		return "NO_GRAB";
         case (BroadPhaseLayer::Type)BroadPhaseLayers::LADDER:		return "LADDER";
+        case (BroadPhaseLayer::Type)BroadPhaseLayers::TRIGGER:		return "TRIGGER";
         default:													JPH_ASSERT(false); return "INVALID";
         }
     }
@@ -145,6 +151,8 @@ public:
             return true;
         case (Layers::LADDER):
             return true;
+        case (Layers::TRIGGER):
+            return inLayer2 == BroadPhaseLayers::PLAYER;
         default:
             JPH_ASSERT(false);
             return false;
@@ -181,11 +189,24 @@ public:
 private:
 };
 
-// TraceShape is pretty much just MoveHelper without a body, used for quick collision checks e.g. ground checks
-TraceResult TraceShape(Ref<const Shape> shape, Vec3 origin, Vec3 motion, BodyFilter& bodyFilter = BodyFilter(), ObjectLayerFilter& objectLayerFilter = ObjectLayerFilter());
-TraceResult TraceShape(Ref<const Shape> shape, Mat44 matrix, Vec3 motion, BodyFilter& bodyFilter = BodyFilter(), ObjectLayerFilter& objectLayerFilter = ObjectLayerFilter());
 
-TraceResult TraceRay(Vec3 from, Vec3 to, BodyFilter& bodyFilter = BodyFilter(), ObjectLayerFilter& objectLayerFilter = ObjectLayerFilter());
+class TraceObjectLayerFilter : public ObjectLayerFilter
+{
+public:
+    virtual bool ShouldCollide(ObjectLayer inObject) const override
+    {
+        if (inObject == Layers::TRIGGER)
+            return false;
+
+        return true;
+    }
+};
+
+// TraceShape is pretty much just MoveHelper without a body, used for quick collision checks e.g. ground checks
+TraceResult TraceShape(Ref<const Shape> shape, Vec3 origin, Vec3 motion, BodyFilter& bodyFilter = BodyFilter(), ObjectLayerFilter& objectLayerFilter = TraceObjectLayerFilter());
+TraceResult TraceShape(Ref<const Shape> shape, Mat44 matrix, Vec3 motion, BodyFilter& bodyFilter = BodyFilter(), ObjectLayerFilter& objectLayerFilter = TraceObjectLayerFilter());
+
+TraceResult TraceRay(Vec3 from, Vec3 to, BodyFilter& bodyFilter = BodyFilter(), ObjectLayerFilter& objectLayerFilter = TraceObjectLayerFilter());
 
 inline PhysicsSystem* physics_system;
 inline BodyInterface* body_interface;
