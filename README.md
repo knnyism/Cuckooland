@@ -14,6 +14,7 @@ The player must use this tool to solve puzzles and **collect** cuckoos.
 
 - `WASD` to move
 - `Space` to jump
+- HOLD `Right Mouse` to zoom in
 - [Matter Manipulator] HOLD `Left Mouse` to move objects
 - [Matter Manipulator] HOLD `R` and move mouse to rotate objects
 - [Matter Manipulator] `Mouse Wheel` to bring objects closer or further away
