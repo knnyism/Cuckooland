@@ -4,7 +4,6 @@ constexpr f32 VIEWMODEL_SCALE = 0.01f; // We're doing this because we don't want
 
 void MatterMan::Spawn(Player* plr) {
     player = plr;
-    viewmodel = GetModel("v_matman");
 }
 
 // Filter that ignores bodies that can't be held by the matter manipulator
@@ -13,7 +12,7 @@ class MatterManObjectLayerFilter : public ObjectLayerFilter
 public:
     virtual bool ShouldCollide(ObjectLayer inObject) const override
     {
-        if (inObject == Layers::NO_GRAB)
+        if (inObject == Layers::NO_GRAB || inObject == Layers::TRIGGER)
             return false;
 
         return true;
@@ -28,8 +27,12 @@ void MatterMan::Tick() {
 
     player->lookLocked = false;
 
+    crosshairState = NEUTRAL;
+
     if (holdingBrake) {
         if (!holdBody.IsInvalid()) {
+            crosshairState = HOLDING;
+
             Ref shape(body_interface->GetShape(holdBody).GetPtr());
 
             // Rotation controls
@@ -54,20 +57,8 @@ void MatterMan::Tick() {
             }
 
             // Push/pull controls
-            if (scrollDirection != 0.0f) {
-                Mat44 newHoldMatrixRelative = Mat44::sTranslation(Vec3::sAxisZ() * scrollDirection) * holdMatrixRelative;
-
-                // Cast shape to see if with the new transforms the prop would collide with something
-                TraceResult result = TraceShape(
-                    shape,
-                    body_interface->GetWorldTransform(holdBody),
-                    lookDir * scrollDirection,
-                    IgnoreSingleBodyFilter(holdBody)
-                );
-
-                if (!result.hit)
-                    holdMatrixRelative = newHoldMatrixRelative;
-            }
+            if (scrollDirection != 0.0f)
+                holdMatrixRelative = Mat44::sTranslation(Vec3::sAxisZ() * scrollDirection) * holdMatrixRelative;
 
             // Apply forces
             Mat44 holdMatrixWorld = player->cameraMatrix * holdMatrixRelative;
@@ -75,31 +66,46 @@ void MatterMan::Tick() {
 
             Vec3 holdDirection = holdMatrixWorld.GetTranslation() - cameraPosition;
 
-            holdPointWorld = body_interface->GetWorldTransform(holdBody) * holdPointRelative;
-
             Vec3 translationDirection = (holdMatrixWorld.GetTranslation() - body_interface->GetPosition(holdBody));
             Vec3 rotationalDirection = (holdMatrixWorld.GetRotation().GetQuaternion() * body_interface->GetRotation(holdBody).Conjugated()).GetEulerAngles();
 
             Vec3 velocity = translationDirection.Normalized() * Clamp(translationDirection.Length() * 20, 0.0f, 40.0f);
             Vec3 angularVelocity = rotationalDirection.Normalized() * Clamp(rotationalDirection.Length() * 20, 0.0f, 40.0f);
 
+            if (velocity.IsNaN()) {
+                velocity = Vec3::sZero();
+            }
+
+            if (angularVelocity.IsNaN()) {
+                angularVelocity = Vec3::sZero();
+            }
+
             body_interface->SetLinearAndAngularVelocity(holdBody, velocity, angularVelocity);
         }
         else {
             TraceResult result = TraceRay(player->cameraMatrix.GetTranslation(), lookDir * 100.0f, IgnoreSingleBodyFilter(player->body->GetID()), MatterManObjectLayerFilter());
 
-            if (result.hit) {
-                if (body_interface->GetMotionType(result.bodyId) == EMotionType::Dynamic) {
-                    holdBody = result.bodyId;
-                    holdPointRelative = body_interface->GetWorldTransform(holdBody).Inversed() * Mat44::sTranslation(result.point);
+            if (result.hit && body_interface->GetMotionType(result.bodyId) == EMotionType::Dynamic) {
+                holdBody = result.bodyId;
+                holdPointRelative = body_interface->GetWorldTransform(holdBody).Inversed() * Mat44::sTranslation(result.point);
 
-                    holdMatrixRelative = player->cameraMatrix.Inversed()
-                        * body_interface->GetWorldTransform(holdBody);
-                }
+                holdMatrixRelative = player->cameraMatrix.Inversed()
+                    * body_interface->GetWorldTransform(holdBody);
             }
         }
     }
     else {
+        TraceResult result = TraceRay(player->cameraMatrix.GetTranslation(), lookDir * 100.0f, IgnoreSingleBodyFilter(player->body->GetID()), MatterManObjectLayerFilter());
+
+        if (result.hit) {
+            if (body_interface->GetMotionType(result.bodyId) == EMotionType::Dynamic) {
+                crosshairState = AVAILABLE;
+            }
+            else {
+                crosshairState = BLOCKED;
+            }
+        }
+
         if (!holdBody.IsInvalid())
             holdBody = BodyID();
     }
@@ -129,7 +135,7 @@ void MatterMan::Render() {
 
     sway.UpdateWithGoal(goal, GetFrameTime());
 
-    if (sway.position.Length() > 0.0001f) {
+    if (sway.position.Length() > 0.001f) {
         viewmodelMatrix = viewmodelMatrix
             * Mat44::sRotationY(sway.position[0])
             * Mat44::sRotationX(sway.position[1]);
@@ -141,13 +147,29 @@ void MatterMan::Render() {
     viewmodelMatrix.GetRotation().GetQuaternion().GetAxisAngle(axis, angle);
     Vec3 viewmodelPosition = viewmodelMatrix.GetTranslation();
 
-    Vec3 pos = holdPointWorld.GetTranslation();
-
-    DrawCube({ pos.GetX(), pos.GetY(), pos.GetZ() }, 0.1f, 0.1f, 0.1f, raylib::RED);
-
     viewmodel->Draw(
         { viewmodelPosition.GetX(), viewmodelPosition.GetY(), viewmodelPosition.GetZ() },
         { axis.GetX(), axis.GetY(), axis.GetZ() },
         angle * RAD2DEG, Vector3{ VIEWMODEL_SCALE, VIEWMODEL_SCALE, VIEWMODEL_SCALE }
     );
+}
+
+void MatterMan::AfterCamera() {
+    Vector2 crosshairPosition = { GetScreenWidth() / 2 - 25, GetScreenHeight() / 2 - 25 };
+
+    switch (crosshairState)
+    {
+    case NEUTRAL:
+        crosshairNeutral.Draw(crosshairPosition);
+        break;
+    case AVAILABLE:
+        crosshairAvailable.Draw(crosshairPosition);
+        break;
+    case BLOCKED:
+        crosshairBlocked.Draw(crosshairPosition);
+        break;
+    case HOLDING:
+        crosshairHolding.Draw(crosshairPosition);
+        break;
+    }
 }
