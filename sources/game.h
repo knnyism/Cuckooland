@@ -49,7 +49,7 @@ public:
     virtual void Render() {};
 
     virtual void OnContactAdded(const Body& inBody1, const Body& inBody2, const ContactManifold& inManifold, ContactSettings& ioSettings) {};
-
+    virtual void OnContactRemoved(const SubShapeIDPair& inSubShapePair) {};
     virtual void Destroy() {};
 private:
 };
@@ -171,8 +171,9 @@ namespace game {
     public:
         raylib::Sound* currentSound;
 
-        bool isPlaying = false;
         bool isLooped = false;
+        bool isPlaying = false;
+        bool isStopped = false;
 
         f32 volume = 0.5f;
         f32 pitch = 1.0f;
@@ -181,7 +182,10 @@ namespace game {
         u8 maxInstances;
         u8 maxVariations;
 
-        Sound(string soundPath, u8 maxInstances = 8, u8 maxVariations = 1) : maxInstances(maxInstances), maxVariations(maxVariations) {
+        string path;
+
+        Sound(string soundPath, u8 maxInstances = 8, u8 maxVariations = 1, bool isLooped = false) : maxInstances(maxInstances), maxVariations(maxVariations), isLooped(isLooped) {
+            path = soundPath;
             if (maxVariations > 1) {
                 for (u8 i = 0; i < maxInstances; i++) {
                     u8 variation = i % maxVariations;
@@ -193,6 +197,8 @@ namespace game {
                     soundArray[i] = GetSound(soundPath);
                 }
             }
+
+            currentSound = soundArray[0];
         }
 
         virtual void Play();
@@ -211,9 +217,7 @@ namespace game {
 
         Sound3D() = default;
 
-        Sound3D(string soundPath, Vec3 position = Vec3::sZero(), u8 maxInstances = 8, u8 maxVariations = 1) : Sound(soundPath, maxInstances, maxVariations), position(position) {
-
-        };
+        Sound3D(string soundPath, Vec3 position = Vec3::sZero(), u8 maxInstances = 8, u8 maxVariations = 1, bool isLooped = false) : Sound(soundPath, maxInstances, maxVariations, isLooped), position(position) {};
 
         void Play() override;
         void Stop() override;

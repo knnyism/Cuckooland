@@ -1,6 +1,6 @@
 #include <game.h>
 
-Mat44 cameraMatrix;
+Mat44 cameraMatrix = Mat44::sTranslation(Vec3::sReplicate(10000));
 
 Entity* FindEntity(EntityId id)
 {
@@ -55,8 +55,6 @@ namespace game {
 
         bcs.mFriction = overrideFriction;
 
-        //bcs.mMotionQuality = EMotionQuality::LinearCast;
-
         body = body_interface->CreateBody(bcs);
         bodyId = body->GetID();
 
@@ -82,6 +80,8 @@ namespace game {
     }
 
     void Sound::Play() {
+        isStopped = false;
+
         if (maxVariations > 1)
         {
             soundIndex = rand() % maxInstances;
@@ -100,7 +100,15 @@ namespace game {
     }
 
     void Sound::Stop() {
+        isStopped = true;
 
+        for (u8 i = 0; i < maxInstances; i++) {
+            if (soundArray[i] == nullptr)
+                continue;
+
+            if (soundArray[i]->IsPlaying())
+                soundArray[i]->Stop();
+        }
     }
 
     void Sound3D::Play() {
@@ -111,7 +119,14 @@ namespace game {
             if (soundArray[i]->IsPlaying())
                 continue;
 
-            playingSound3Ds[i] = this;
+            for (u8 j = 0; j < MAX_SOUNDS; j++) {
+                if (playingSound3Ds[j] == nullptr) {
+                    playingSound3Ds[j] = this;
+                    break;
+                }
+            }
+
+            break;
         }
 
         Sound::Play();
@@ -122,6 +137,13 @@ namespace game {
         Vec3 cameraPos = cameraMatrix.GetTranslation();
 
         f32 distance = (cameraPos - position).Length();
+
+        if (distance < 1.0f) {
+            currentSound->SetVolume(volume);
+            currentSound->SetPan(0.5f);
+            return;
+        }
+
         f32 normalizedDistance = min(distance / maxDistance, 1.0f);
         f32 distanceVolume = 1.0f - normalizedDistance;
 
@@ -135,14 +157,25 @@ namespace game {
     }
 
     void Sound3D::Stop() {
-
+        Sound::Stop();
     }
 
     void UpdateSound3Ds() {
         for (u8 i = 0; i < MAX_SOUNDS; i++) {
             Sound3D* sound = playingSound3Ds[i];
-            if (sound != nullptr && sound->currentSound->IsPlaying()) {
-                sound->Update();
+            if (sound != nullptr) {
+                sound->isPlaying = sound->currentSound->IsPlaying();
+
+                if (sound->isPlaying) {
+                    sound->Update();
+                }
+                else {
+                    if (sound->isLooped) {
+                        sound->Play();
+                    }
+
+                    playingSound3Ds[i] = nullptr;
+                }
             }
         }
     }
