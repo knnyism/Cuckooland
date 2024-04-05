@@ -75,13 +75,10 @@ TraceResult TraceRay(Vec3 from, Vec3 direction, BodyFilter& bodyFilter, ObjectLa
     return traceResult;
 }
 
-
 void MoveHelper::MoveAndSlide(Ref<const Shape> shape) {
     f32 travelLeft = 1.0f;
-    int iterations = 10; // TODO: why does BoxShape cause a crash here
-    BodyInterface& bodyInterface = physics_system->GetBodyInterface();
 
-    while (travelLeft > 0 && iterations > 0) {
+    while (travelLeft > 0) {
         const Vec3 rayDirection = velocity * TICK_DURATION * travelLeft;
         const TraceResult traceResult = TraceShape(shape, position, rayDirection, IgnoreSingleBodyFilter(body->GetID()));
 
@@ -91,15 +88,20 @@ void MoveHelper::MoveAndSlide(Ref<const Shape> shape) {
         }
 
         const f32 velocityLength = velocity.Length();
-        const Vec3 velocityNormal = velocity.Normalized();
+        if (velocityLength > 0)
+        {
+            const Vec3 velocityNormal = velocity.Normalized();
 
-        const Vec3 undesiredMotion = -traceResult.normal * velocityNormal.Dot(-traceResult.normal);
-        const Vec3 desiredMotion = velocityNormal - undesiredMotion;
+            const Vec3 undesiredMotion = -traceResult.normal * velocityNormal.Dot(-traceResult.normal);
+            const Vec3 desiredMotion = velocityNormal - undesiredMotion;
+            velocity = desiredMotion * velocityLength;
+        }
 
         position = position + rayDirection * traceResult.fraction + traceResult.normal * 0.001f;
-        velocity = desiredMotion * velocityLength;
+
+        if (traceResult.fraction == 0.0f)
+            break;
 
         travelLeft -= traceResult.fraction;
-        iterations--;
     }
 }
