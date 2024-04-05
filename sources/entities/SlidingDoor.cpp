@@ -10,33 +10,40 @@ void SlidingDoor::Spawn(Vec3 closedPosition, Vec3 openPosition, Quat rotation) {
     openSound.position = closedPosition;
     closeSound.position = closedPosition;
 
-    model.Load("tech_door", position, rotation, {}, {}, EMotionType::Static);
+    model.Load("tech_door", position, rotation, -1.0f, {}, EMotionType::Kinematic);
+
+    trigger = CreateEntity<Trigger>();
+    trigger->Load(new BodyCreationSettings(new BoxShape(Vec3(sensorRange, 6.0f, 5.0f)), position, rotation, EMotionType::Static, Layers::TRIGGER),
+        [this](BodyID bodyId) { OnTriggerTouched(bodyId); });
 }
 
-void SlidingDoor::HandlePlayer(Player* player) {
-    if ((player->moveHelper.position - closedPosition).Length() < sensorRange) {
-        sensorHit = true;
-    }
+void SlidingDoor::SetState(bool value) {
+    if (value) { openSound.Play(); }
+    else { closeSound.Play(); }
+
+    isOpen = value;
+    isMoving = true;
+    moveStartTime = GetTime();
+}
+
+void SlidingDoor::OnTriggerTouched(BodyID bodyId) {
+    if (bodyId == model.bodyId)
+        return;
+
+    sensorHit = true;
 }
 
 void SlidingDoor::HandleState() {
+    if (!automatic) { return; }
+
     if (sensorHit) {
-        if (!isMoving && !isOpen) {
-            openSound.Play();
-            isOpen = true;
-            isMoving = true;
-            moveStartTime = GetTime();
-        }
+        if (!isMoving && !isOpen) { SetState(true); }
         lastCheckTime = GetTime();
     }
     else {
-        if (!isMoving && isOpen && GetTime() - lastCheckTime > idleTime) {
-            closeSound.Play();
-            isOpen = false;
-            isMoving = true;
-            moveStartTime = GetTime();
-        }
+        if (!isMoving && isOpen && GetTime() - lastCheckTime > idleTime) { SetState(false); }
     }
+
 }
 
 void SlidingDoor::Animate() {
@@ -54,23 +61,14 @@ void SlidingDoor::Animate() {
 }
 
 void SlidingDoor::Tick() {
-    sensorHit = false;
-
-    for (auto& bucket : entities.buckets) {
-        for (Entity* entity : bucket->data) {
-            Player* player = dynamic_cast<Player*>(entity);
-
-            if (player) {
-                HandlePlayer(player);
-            }
-        }
-    }
-
     HandleState();
     Animate();
 
-    body_interface->SetPosition(model.bodyId, position, EActivation::Activate);
+    body_interface->MoveKinematic(model.bodyId, position, rotation, TICK_DURATION);
+
     model.Tick();
+
+    sensorHit = false;
 }
 
 void SlidingDoor::Render() {

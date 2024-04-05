@@ -5,6 +5,7 @@
 #include <interpolation.h>
 
 #include <entities/Player.h>
+#include <entities/Trigger.h>
 
 class SlidingDoor : public Entity {
 public:
@@ -16,10 +17,10 @@ public:
     bool isOpen;
     bool isMoving;
 
-    bool sensorActive = true;
+    bool automatic = true;
     bool sensorHit = false;
 
-    f32 sensorRange = 10.0f;
+    f32 sensorRange = 5.0f;
     f32 idleTime = 5.0f;
     f32 moveTime = 1.7f;
 
@@ -27,7 +28,8 @@ public:
     f32 lastCheckTime = 0.0f;
 
     void Spawn(Vec3 closedPosition, Vec3 openPosition, Quat rotation = Quat::sIdentity());
-    void HandlePlayer(Player* player);
+
+    void SetState(bool value);
 
     void HandleState();
 
@@ -39,6 +41,10 @@ public:
     Vec3 position;
     Quat rotation;
 private:
+    void OnTriggerTouched(BodyID bodyId);
+
+    Trigger* trigger;
+
     Vec3 destination;
     Vec3 closedPosition;
     Vec3 openPosition;
