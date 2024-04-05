@@ -31,6 +31,7 @@ struct Light {
 uniform Light lights[100];
 
 uniform vec3 camPos;
+uniform float fogDensity;
 
 const float PI = 3.14159265359;
 
@@ -161,6 +162,16 @@ void main() {
     color = color / (color + vec3(1.0));
     // gamma correct
     color = pow(color, vec3(1.0 / 2.2));
+
+    // fog
+    float dist = length(camPos - vert_pos);
+    const vec3 fogColor = vec3(0.078, 0.097, 0.057);
+
+    float fogFactor = 1.0/exp((dist*fogDensity)*(dist*fogDensity));
+
+    fogFactor = clamp(fogFactor, 0.0, 1.0);
+
+    color = mix(fogColor, color, fogFactor);
 
     // 1.0 is opacity
     FragColor = vec4(color, 1.0);
