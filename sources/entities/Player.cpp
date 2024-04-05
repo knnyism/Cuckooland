@@ -1,7 +1,5 @@
 #include <entities/Player.h>
 
-#include <tween.h>
-#include <iostream>
 
 static Vec3 CalculateMoveDirection(Vec3 targetDirection, f32 camAngleX) {
     Quat baseDir = Quat::sRotation(Vec3::sAxisY(), DegreesToRadians(camAngleX));
@@ -53,18 +51,21 @@ static Vec3 MoveAir(Vec3 moveDirection, Vec3 velocity) {
     return Accelerate(moveDirection, horizontal + vertical, PLAYER_ACCELERATE_AIR, PLAYER_GAIN_AIR) + physics_system->GetGravity() * TICK_DURATION;
 }
 
-static Vec3 MoveLadder(Vec3 moveDirection, Vec3 ladderNormal) {
-    float dot = -moveDirection.Dot(ladderNormal);
-    Vec3 accelerationDirection = Vec3(moveDirection.GetX(), dot, moveDirection.GetZ());
+static Vec3 MoveLadder(Player* player, Vec3 inputDirection, Vec3 ladderNormal) {
+    Vec3 lookDir = player->cameraMatrix.GetRotation() * Mat44::sRotationX(-PI / 4) * inputDirection;
+    const Vec3 velocityNormal = lookDir.Normalized();
 
-    Vec3 vel = (accelerationDirection - (accelerationDirection * Vec3(abs(ladderNormal.GetX()), abs(ladderNormal.GetY()), abs(ladderNormal.GetZ())))) * PLAYER_MAX_SPEED;
+    const Vec3 undesiredMotion = -ladderNormal * velocityNormal.Dot(-ladderNormal);
+    const Vec3 desiredMotion = (velocityNormal - undesiredMotion) * PLAYER_MAX_SPEED;
 
-    if (vel.LengthSq() > 0) {
-        vel -= ladderNormal * 5;
-        return vel.Normalized() * min((f32)PLAYER_MAX_SPEED, vel.Length()) * Vec3(0.7, 1, 0.7);
+    Vec3 velocity = -ladderNormal * 2;
+
+    if (desiredMotion.Normalized().IsNaN())
+    {
+        return velocity;
     }
 
-    return Vec3();
+    return velocity + desiredMotion.Normalized() * std::min(desiredMotion.Length(), (float)PLAYER_MAX_SPEED);
 }
 
 class LadderObjectLayerFilter : public ObjectLayerFilter
@@ -80,20 +81,33 @@ public:
 };
 
 void Player::Load() {
-    body = body_interface->CreateBody(BodyCreationSettings(new CapsuleShape(0.5f * characterHeightStanding - 0.2f, characterRadiusStanding + 0.1f), moveHelper.position, Quat::sIdentity(), EMotionType::Dynamic, Layers::PLAYER));
+    BodyCreationSettings bcs = BodyCreationSettings(new CapsuleShape(0.5f * characterHeightStanding - 0.2f, characterRadiusStanding + 0.1f), moveHelper.position, Quat::sIdentity(), EMotionType::Dynamic, Layers::PLAYER);
+
+    body = body_interface->CreateBody(bcs);
+    body_interface->AddBody(body->GetID(), EActivation::Activate);
+
     moveHelper = MoveHelper(Vec3::sZero(), Vec3::sZero(), body);
 
-    body_interface->AddBody(body->GetID(), EActivation::Activate);
+    fov.stiffness = 500;
+    fov.dampening = 40;
 }
 
 void Player::Kill() {
-    std::cout << "dead!" << std::endl;
+    deathSound.Play();
+    deathTime = GetTime();
+
+    deathCount++;
+
     IsPlayerAlive = false;
 }
 
-void Player::Spawn(Vec3 atPos) {
+void Player::Spawn() {
+    spawnTime = GetTime();
+
+    moveHelper.velocity = Vec3::sZero();
+    moveHelper.position = spawnPoint;
+
     IsPlayerAlive = true;
-    moveHelper.position = atPos;
 }
 
 void Player::TraceToLadder(Ref<const Shape> shape, BodyFilter& filter) {
@@ -105,7 +119,7 @@ void Player::TraceToLadder(Ref<const Shape> shape, BodyFilter& filter) {
         LadderObjectLayerFilter()
     );
 
-    ladderNormal = ladderTrace.normal;
+    ladderNormal = ladderTrace.normal.Normalized();
 
     if (!ladderTrace.hit) {
         currentLadder = BodyID();
@@ -117,23 +131,37 @@ void Player::CheckForLadder(Ref<const Shape> shape, BodyFilter& filter) {
         TraceToLadder(shape, filter);
     }
     else {
-        TraceResult ladderTrace = TraceShape(
-            shape,
-            moveHelper.position,
-            moveHelper.velocity.Normalized(),
-            filter,
-            LadderObjectLayerFilter()
-        );
+        if (moveHelper.velocity.LengthSq() > 0.0f) {
+            TraceResult ladderTrace = TraceShape(
+                shape,
+                moveHelper.position,
+                moveHelper.velocity.Normalized(),
+                filter,
+                LadderObjectLayerFilter()
+            );
 
-        if (ladderTrace.hit) {
-            currentLadder = ladderTrace.bodyId;
-            TraceToLadder(shape, filter);
+            if (ladderTrace.hit) {
+                currentLadder = ladderTrace.bodyId;
+                TraceToLadder(shape, filter);
+            }
         }
     }
 }
 
 void Player::Tick() {
-    Vec3 inputDirection = Vec3(IsKeyDown(KEY_A) - IsKeyDown(KEY_D), 0, IsKeyDown(KEY_W) - IsKeyDown(KEY_S));
+    if (!IsPlayerAlive) {
+        f32 t = GetTime() - deathTime;
+
+        if (t > 4.0f) {
+            spawnSound.Play();
+            Spawn();
+        }
+
+        return;
+    }
+
+    Vec3 inputDirection = Vec3::sZero();
+    if (!movementLocked) { inputDirection = Vec3(IsKeyDown(KEY_A) - IsKeyDown(KEY_D), 0, IsKeyDown(KEY_W) - IsKeyDown(KEY_S)); }
     Vec3 moveDirection = CalculateMoveDirection(inputDirection, lookAngleX);
 
     Ref<const Shape> shape = standingShape;
@@ -149,19 +177,25 @@ void Player::Tick() {
         filter
     );
 
-    bool wasCrouching = isCrouching;
     bool wasGrounded = isGrounded;
 
     bool isOnLadder = !currentLadder.IsInvalid();
     isGrounded = groundTrace.hit && groundTrace.normal.GetY() > 0.8f;
 
-    CheckForLadder(shape, filter);
-
-    if (isGrounded)
+    if (isOnLadder && ladderNormal.GetY() < 0.8f)
     {
-        isCrouching = IsKeyDown(KEY_LEFT_CONTROL);
-
-        if (IsKeyDown(KEY_SPACE))
+        if (IsKeyDown(KEY_SPACE) && !movementLocked)
+        {
+            moveHelper.velocity = ladderNormal * PLAYER_IMPULSE_JUMP;
+        }
+        else
+        {
+            moveHelper.velocity = MoveLadder(this, inputDirection, ladderNormal);
+        }
+    }
+    else if (isGrounded)
+    {
+        if (IsKeyDown(KEY_SPACE) && !movementLocked)
             moveHelper.velocity = Vec3(moveHelper.velocity.GetX(), PLAYER_IMPULSE_JUMP, moveHelper.velocity.GetZ());
         else
             moveHelper.velocity = MoveGround(moveDirection, moveHelper.velocity);
@@ -175,15 +209,6 @@ void Player::Tick() {
 
         lastGroundBody = groundTrace.bodyId;
         lastGroundPosition = groundPosition;
-    }
-    else if (isOnLadder)
-    {
-        /*if (IsKeyDown(KEY_SPACE))
-        {
-            moveHelper.velocity = ladderNormal * PLAYER_IMPULSE_JUMP;
-        }
-        else*/
-        moveHelper.velocity = MoveLadder(moveDirection, ladderNormal);
     }
     else
     {
@@ -203,10 +228,10 @@ void Player::Tick() {
     }
 
     moveHelper.MoveAndSlide(shape);
+    CheckForLadder(shape, filter);
 
-    body_interface->SetLinearVelocity(body->GetID(), moveHelper.velocity);
-    body_interface->SetPosition(body->GetID(), moveHelper.position, EActivation::Activate);
-    body_interface->SetRotation(body->GetID(), Quat::sIdentity(), EActivation::Activate);
+    body_interface->SetPositionAndRotation(body->GetID(), moveHelper.position, Quat::sIdentity(), EActivation::DontActivate);
+    body_interface->SetLinearAndAngularVelocity(body->GetID(), Vec3::sZero(), Vec3::sZero());
 
     positionState.Set(moveHelper.position);
     velocityState.Set(moveHelper.velocity);
@@ -224,22 +249,46 @@ void Player::Tick() {
 }
 
 void Player::BeforeCamera() {
-    // TODO: Whoa.. clean this up
     Vector2 mouseDelta = GetMouseDelta();
     Vec3 velocity = velocityState.Get();
 
+    f32 fovGoal = FOV_DEFAULT;
+
+    if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && !lookLocked) {
+        fovGoal = FOV_ZOOMED;
+    }
+
+    fov.UpdateWithGoal(fovGoal, GetFrameTime());
+    camera->fovy = fov.position;
+
+    f32 mouseSensitivity = 0.2f * camera->fovy / FOV_DEFAULT;
+
     if (!lookLocked) {
-        lookAngleX = fmod(lookAngleX - mouseDelta.x * 0.2f, 360);
-        lookAngleY = std::clamp(lookAngleY + mouseDelta.y * 0.2f, CAM_LOOK_DOWN, CAM_LOOK_UP);
+        lookAngleX = fmod(lookAngleX - mouseDelta.x * mouseSensitivity, 360);
+        lookAngleY = std::clamp(lookAngleY + mouseDelta.y * mouseSensitivity, CAM_LOOK_DOWN, CAM_LOOK_UP);
     }
 
     Vec3 viewBob = Vec3(0, cos(GetTime() * 8) * 0.2f * (velocity * Vec3(1, 0, 1)).Length() / PLAYER_MAX_SPEED, 0);
+
     cameraMatrix = Mat44::sRotationTranslation(
         Quat::sRotation(Vec3::sAxisY(), DegreesToRadians(lookAngleX)) * Quat::sRotation(Vec3::sAxisX(), DegreesToRadians(lookAngleY)),
         positionState.Get() + viewBob + Vec3::sAxisY() * cameraHeightStanding
     );
 
+    f32 t = GetTime() - spawnTime;
+
+    if (t < 2.5f) {
+        cameraMatrix = cameraMatrix * Mat44::sTranslation(
+            Vec3(
+                (float)GetRandomValue(-100, 100) / 100.0f,
+                (float)GetRandomValue(-100, 100) / 100.0f,
+                (float)GetRandomValue(-100, 100) / 100.0f
+            ) * (2.5f - t) * 0.1f
+        );
+    }
+
     // Effects
+
     f32 landAlpha = std::clamp((GetTime() - landTime) / 1.0, 0.0, 1.0);
     Quat roll = Quat::sRotation(-Vec3::sAxisZ(), ((cameraMatrix.GetRotation().GetQuaternion().Inversed() * velocity).GetX() / (PLAYER_MAX_SPEED * 25)));
     Quat landBob = Quat::sRotation(Vec3(1, landDirection, landDirection).Normalized(), (1 - tween::cubicout(landAlpha)) * landPower);
@@ -249,4 +298,36 @@ void Player::BeforeCamera() {
         * Mat44::sRotation(landBob);
 
     game::SetCameraMatrix(matrixWithEffects);
+}
+
+void Player::AfterCamera() {
+    if (!IsPlayerAlive) {
+        f32 t = GetTime() - deathTime;
+
+        deathRectangle.SetSize(Vector2{ (float)GetScreenWidth(), (float)GetScreenHeight() });
+        deathRectangle.Draw(raylib::Color(0, 0, 0, 255));
+
+        if (t > 1.0f) {
+            deathLabel1.object.SetSpacing(4.0f);
+            deathLabel1.object.SetFontSize(deathLabel1.GetAbsoluteSize().y);
+            deathLabel1.size = game::UDim2(0, deathLabel1.object.MeasureEx().x, deathLabel1.size.y.scale, 0);
+            deathLabel1.object.Draw(deathLabel1.GetAbsolutePosition());
+        }
+
+        if (t > 3.0f) {
+            deathLabel2.object.SetSpacing(4.0f);
+            deathLabel2.object.SetFontSize(deathLabel2.GetAbsoluteSize().y);
+            deathLabel2.size = game::UDim2(0, deathLabel2.object.MeasureEx().x, deathLabel2.size.y.scale, 0);
+            deathLabel2.object.Draw(deathLabel2.GetAbsolutePosition());
+        }
+
+        return;
+    }
+
+    f32 t = GetTime() - spawnTime;
+    if (t < 2.0f) {
+        f32 alpha = 1.0f - tween::sineout(std::clamp(t / 2.0f, 0.0f, 1.0f));
+
+        deathRectangle.Draw(raylib::Color(255, 255, 255, GetRandomValue(210, 255) * alpha));
+    }
 }
