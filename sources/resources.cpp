@@ -44,7 +44,18 @@ Array<Vec3>* GetShape(string path) {
 
             for (int j = 0; j < mesh->mNumVertices; j++) {
                 aiVector3D vertex = mesh->mVertices[j];
-                shape->push_back(Vec3(vertex.x, vertex.y, vertex.z));
+                Vec3 jphVertex = Vec3(vertex.x, vertex.y, vertex.z);
+
+                bool found = false;
+                for (const Vec3& otherVertex : *shape) {
+                    if (jphVertex.IsClose(otherVertex)) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                    shape->push_back(jphVertex);
             }
         }
 
