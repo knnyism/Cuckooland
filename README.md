@@ -15,9 +15,9 @@ The player must use this tool to solve puzzles and **collect** cuckoos.
 - <kbd>WASD</kbd> to move
 - <kbd>SPACE</kbd> to jump
 - HOLD <kbd>Right Mouse</kbd> to zoom
-- [Matter Manipulator] HOLD <kbd>Left Mouse</kbd> to move objects
-- [Matter Manipulator] HOLD <kbd>R</kbd> and move mouse to rotate objects
-- [Matter Manipulator] <kbd>Mouse Wheel</kbd> to bring objects closer or further away
+- [Transform Cannon] HOLD <kbd>Left Mouse</kbd> to move objects
+- [Transform Cannon] HOLD <kbd>R</kbd> and move mouse to rotate objects
+- [Transform Cannon] <kbd>Mouse Wheel</kbd> to bring objects closer or further away
 
 ## Compiling / Building
 
