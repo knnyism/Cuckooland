@@ -1,7 +1,7 @@
 #include <resources.h>
 
 Assimp::Importer importer;
-const string assetsPath = string(GetWorkingDirectory()) + "/assets/";
+const string assetsPath = "./assets/";
 
 std::map<string, raylib::Model*> models;
 std::map<string, Array<Vec3>*> shapes;
