@@ -3,6 +3,7 @@
 #include <game.h>
 #include <functional>
 
+
 class TimerFunc {
 public:
     f32 time;
@@ -12,6 +13,7 @@ public:
     TimerFunc(f32 time, std::function<void()> func) : time(time), func(func), isCalled(false) {};
 };
 
+// Entity that calls a function after the time passes the given timestamp
 class Timer : public Entity {
 public:
     f32 time;

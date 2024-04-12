@@ -1,6 +1,6 @@
 #include <entities/Player.h>
 
-
+// Projects the target direction to the camera's look vector
 static Vec3 CalculateMoveDirection(Vec3 targetDirection, f32 camAngleX) {
     Quat baseDir = Quat::sRotation(Vec3::sAxisY(), DegreesToRadians(camAngleX));
     Vec3 result = baseDir * targetDirection;
@@ -68,6 +68,7 @@ static Vec3 MoveLadder(Player* player, Vec3 inputDirection, Vec3 ladderNormal) {
     return velocity + desiredMotion.Normalized() * std::min(desiredMotion.Length(), (float)PLAYER_MAX_SPEED);
 }
 
+// Object layer filter for ladder magnetization
 class LadderObjectLayerFilter : public ObjectLayerFilter
 {
 public:
@@ -110,6 +111,7 @@ void Player::Spawn() {
     IsPlayerAlive = true;
 }
 
+// Are we currently colliding with the ladder we are being magnetized to?
 void Player::TraceToLadder(Ref<const Shape> shape, BodyFilter& filter) {
     TraceResult ladderTrace = TraceShape(
         shape,
@@ -126,6 +128,8 @@ void Player::TraceToLadder(Ref<const Shape> shape, BodyFilter& filter) {
     }
 }
 
+// Look for ladders that are in our trajectory
+// and magnetize if possible
 void Player::CheckForLadder(Ref<const Shape> shape, BodyFilter& filter) {
     if (!currentLadder.IsInvalid()) {
         TraceToLadder(shape, filter);
@@ -170,6 +174,7 @@ void Player::Tick() {
     filter.IgnoreBody(body->GetID());
     filter.IgnoreBody(holdProp); // Early playtesters (me) were using props to boost themselves up to unreachable places, this fixes that!
 
+    // Trace directly down to check if we're currently grounded
     TraceResult groundTrace = TraceShape(
         shape,
         moveHelper.position,
@@ -182,7 +187,7 @@ void Player::Tick() {
     bool isOnLadder = !currentLadder.IsInvalid();
     isGrounded = groundTrace.hit && groundTrace.normal.GetY() > 0.8f;
 
-    if (isOnLadder && ladderNormal.GetY() < 0.8f)
+    if (isOnLadder && ladderNormal.GetY() < 0.8f) // 
     {
         if (IsKeyDown(KEY_SPACE) && !movementLocked)
         {
@@ -219,6 +224,7 @@ void Player::Tick() {
         f32 fallSpeed = velocityState.lastState.GetY();
 
         if (velocityState.lastState.GetY() < -16.0f) {
+            // Play landing animation since we hit the ground hard enough
             landTime = GetTime();
             landDirection = (rand() % 2 == 0) ? 1 : -1;
             landPower = (min(abs(velocityState.lastState.GetY()), 25.0f) / 25.0f) * 5 * DEG2RAD;
@@ -227,12 +233,14 @@ void Player::Tick() {
         }
     }
 
+    // Move the player capsule and simulate the collisions
     moveHelper.MoveAndSlide(shape);
     CheckForLadder(shape, filter);
 
     body_interface->SetPositionAndRotation(body->GetID(), moveHelper.position, Quat::sIdentity(), EActivation::DontActivate);
     body_interface->SetLinearAndAngularVelocity(body->GetID(), Vec3::sZero(), Vec3::sZero());
 
+    // Set the interpolation states
     positionState.Set(moveHelper.position);
     velocityState.Set(moveHelper.velocity);
 
@@ -261,9 +269,10 @@ void Player::BeforeCamera() {
     fov.UpdateWithGoal(fovGoal, GetFrameTime());
     camera->fovy = fov.position;
 
-    f32 mouseSensitivity = 0.2f * camera->fovy / FOV_DEFAULT;
-
     if (!lookLocked) {
+        // Move the camera with mouse input
+        f32 mouseSensitivity = 0.2f * camera->fovy / FOV_DEFAULT;
+
         lookAngleX = fmod(lookAngleX - mouseDelta.x * mouseSensitivity, 360);
         lookAngleY = std::clamp(lookAngleY + mouseDelta.y * mouseSensitivity, CAM_LOOK_DOWN, CAM_LOOK_UP);
     }
@@ -302,6 +311,8 @@ void Player::BeforeCamera() {
 
 void Player::AfterCamera() {
     if (!IsPlayerAlive) {
+        // Draw the death screen
+
         f32 t = GetTime() - deathTime;
 
         deathRectangle.SetSize(Vector2{ (float)GetScreenWidth(), (float)GetScreenHeight() });
@@ -326,6 +337,8 @@ void Player::AfterCamera() {
 
     f32 t = GetTime() - spawnTime;
     if (t < 2.0f) {
+        // Draw the spawn effects
+
         f32 alpha = 1.0f - tween::sineout(std::clamp(t / 2.0f, 0.0f, 1.0f));
 
         deathRectangle.Draw(raylib::Color(255, 255, 255, GetRandomValue(210, 255) * alpha));

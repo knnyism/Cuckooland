@@ -6,6 +6,7 @@
 #include <Jolt/Physics/Constraints/HingeConstraint.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 
+// Hinged door entity, seen as fire exit doors in-game
 class Door : public Prop {
 public:
     Body* body1;

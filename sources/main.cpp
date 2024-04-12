@@ -70,11 +70,11 @@ void main() {
 
     LoadLighting();
 
-    physics_system->OptimizeBroadPhase();
-    physics_system->SetContactListener(new GameContactListener());
-
     // Load level
     CreateEntity<MainLevel>()->Load(); // CreateEntity<TestLevel>()->Load();
+
+    physics_system->OptimizeBroadPhase();
+    physics_system->SetContactListener(new GameContactListener());
 
     while (!window.ShouldClose() && !quitRequested)
     {

@@ -2,6 +2,7 @@
 
 #include <game.h>
 
+// Hud entity that draws subtitles, cuckoo count, save icon and end game screen
 class Hud : public Entity {
 public:
     bool showCuckoos;

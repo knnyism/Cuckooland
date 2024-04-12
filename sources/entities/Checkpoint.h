@@ -7,6 +7,8 @@
 #include <entities/Prop.h>
 #include <entities/Hud.h>
 
+// Checkpoint entity that saves the states of the player and props once touched
+// can optionally not play the reachSound
 class Checkpoint : public Entity {
 public:
     Trigger* trigger;

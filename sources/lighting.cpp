@@ -83,6 +83,7 @@ Material LoadPbrMaterial(Texture albedo, Texture normal, Texture roughness) {
     Material mat = LoadMaterialDefault();
     mat.shader = *shader;
 
+    // Load default textures if none are provided
     mat.maps[MATERIAL_MAP_ALBEDO].texture = (albedo.id != 0) ? albedo : albedoDefault;
     mat.maps[MATERIAL_MAP_NORMAL].texture = (normal.id != 0) ? normal : normalDefault;
     mat.maps[MATERIAL_MAP_METALNESS].texture = (roughness.id != 0) ? roughness : roughnessDefault;

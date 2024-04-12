@@ -1,3 +1,7 @@
+/*
+* Level entity that loads the test level
+*/
+
 #pragma once
 
 #include <game.h>

@@ -1,7 +1,7 @@
 /*
 * game.h
 *
-* This file contains methods used for entity management, and game specific classes: Sound and Model.
+* This file contains methods used for entity management, and game specific classes: Sound and Model and UIObject.
 */
 
 #pragma once
@@ -224,6 +224,8 @@ namespace game {
         void Update();
     };
 
+    // This data type represents a one-dimensional value with two components, a relative scale and an absolute offset
+    // The intended use-cases for UDims are usually related to UI code 
     class UDim {
     public:
         f32 scale;
@@ -240,6 +242,7 @@ namespace game {
         UDim2(f32 xScale = 0.0f, f32 xOffset = 0.0f, f32 yScale = 0.0f, f32 yOffset = 0.0f) : x(xScale, xOffset), y(yScale, yOffset) {}
     };
 
+    // Wrapper class for raylib objects that can work with (2d) position and size values
     template <typename T>
     class UIObject {
     public:

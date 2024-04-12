@@ -2,6 +2,7 @@
 
 #include <game.h>
 
+// Wrapper entity for play-once sounds
 class SoundPlayer : public Entity {
 public:
     game::Sound3D* sound;

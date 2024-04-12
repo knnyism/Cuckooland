@@ -2,6 +2,7 @@
 
 #include <game.h>
 
+// Physics barrier entity
 class Barrier : public Entity {
 public:
     void Load(Vec3 pos = Vec3::sZero(), Quat rot = Quat::sIdentity(), Vec3 size = Vec3::sReplicate(1.0f), ObjectLayer layer = Layers::MOVING) {

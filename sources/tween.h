@@ -1,9 +1,13 @@
-/* Tween, a lightweight easing library. zlib/libpng licensed.
- * - rlyeh.
-
- * Based on code by Robert Penner, GapJumper, Terry Schubring, Jesus Gollonet,
- * Tomas Cepeda, John Resig, lQuery team, Warren Moore. Thanks guys! :-)
- */
+/*
+* tween.h
+*
+* Since I didn't implement an animation system as I thought it would make the code
+* more complicated than it should be, I decided to rely on tweens.
+*
+* To do this, I used the library from:
+* https://github.com/r-lyeh-archived/tween
+*
+*/
 
 #pragma once
 #include <cmath>

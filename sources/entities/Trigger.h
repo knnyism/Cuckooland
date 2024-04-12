@@ -3,6 +3,8 @@
 #include <game.h>
 #include <entities/Player.h>
 
+// Trigger entity that is used to check collisions between two bodies
+// Used for story-driven events, cuckoo pickups, doors and ambience zones
 class Trigger : public Entity {
 public:
     BodyID bodyId;

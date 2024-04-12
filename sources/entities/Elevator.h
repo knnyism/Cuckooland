@@ -5,6 +5,7 @@
 #include <Jolt/Physics/Constraints/TwoBodyConstraint.h>
 #include <Jolt/Physics/Constraints/SixDOFConstraint.h>
 
+// Elevator entity used for one of the puzzles
 class Elevator : public Entity {
 public:
     game::Model base;

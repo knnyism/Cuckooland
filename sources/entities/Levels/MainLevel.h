@@ -1,3 +1,7 @@
+/*
+* Level entity that loads the main level
+*/
+
 #pragma once
 
 #include <game.h>
