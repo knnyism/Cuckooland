@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.26)
 project(cuckooland CXX)
 
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
+
 # Requires C++ 17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -89,7 +91,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(JoltPhysics)
 
-SET_INTERPROCEDURAL_OPTIMIZATION() # Needed by some lto stuff per comment above?
+SET_INTERPROCEDURAL_OPTIMIZATION() # Enable link time optimization
 
 if (EMSCRIPTEN)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY")
