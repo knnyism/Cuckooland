@@ -21,7 +21,7 @@ The player must use this tool to solve puzzles and **collect** cuckoos.
 
 ## Compiling / Building
 
-This project uses CMake, so to compile, you will need Visual Studio 2022 with `C++ CMake tools for Windows` option selected. If you have it ready, then:
+This project uses CMake, so to compile, you will need Visual Studio 2022 with `Desktop development with C++` option selected. If you have it ready, then:
 
 - Clone the repository, and open the project folder in Visual Studio.
 - Configure `CMakeLists.txt`, this will download the dependencies.
