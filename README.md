@@ -25,7 +25,7 @@ This project uses CMake, so to compile, you will need Visual Studio 2022 with `C
 
 - Clone the repository, and open the project folder in Visual Studio.
 - Configure `CMakeLists.txt`, this will download the dependencies.
-- Compile and run `x64-Debug`.
+- Compile and run `x64-Debug` or `x64-Release`.
 
 ## Acknowledgements
 
