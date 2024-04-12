@@ -42,6 +42,7 @@ This project uses CMake, so to compile, you will need Visual Studio 2022 with `C
 - [RobLoach/raylib-cpp](https://github.com/RobLoach/raylib-cpp)
 - [Not-Nik/rlpbr](https://github.com/Not-Nik/rlpbr)
 - [jrouwe/JoltPhysics](https://github.com/jrouwe/JoltPhysics)
+- [r-lyeh-archived/tween](https://github.com/r-lyeh-archived/tween)
 
 ### Assets
 
