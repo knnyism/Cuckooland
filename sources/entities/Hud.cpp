@@ -1,6 +1,6 @@
 #include <entities/Hud.h>
 
-std::map<string, string> subtitleMap = {
+std::map<std::string, std::string> subtitleMap = {
     {"wake_up", "Hey you, the one trapped in that cell! WAKE UP!"},
     {"glad_wokeup", "Ah, you're not dead yet, great!"},
     {"time_to_test", "We've got a few experiments to conduct regarding our new invention."},
@@ -32,7 +32,7 @@ std::map<string, string> subtitleMap = {
     {"good_luck", "Good luck."},
 };
 
-std::map<string, string> tutorialMap = {
+std::map<std::string, std::string> tutorialMap = {
     {"wasd", "WASD / Move around"},
     {"space", "SPACE / Jump"},
     {"ladder", "WASD / Navigate on ladder"},
@@ -41,7 +41,7 @@ std::map<string, string> tutorialMap = {
     {"scroll", "SCROLL / Bring object closer or further away"}
 };
 
-void Hud::SetSubtitle(string subtitle) {
+void Hud::SetSubtitle( std::string subtitle) {
     currentSub = subtitleMap[subtitle];
     subDissapearTime = GetTime() + currentSub.length() * 0.1 + 0.5;
 }
@@ -57,16 +57,16 @@ void Hud::ShowEndGameScreen() {
 
     f32 timePassed = endingTime - startTime;
 
-    string mins = std::to_string((u8)std::floor(timePassed / 60)); // The voices are telling me...
-    string secs = std::to_string((u8)std::fmod(std::floor(timePassed), 60)); // "There has to be a better way!"
+    std::string mins = std::to_string((u8)std::floor(timePassed / 60)); // The voices are telling me...
+    std::string secs = std::to_string((u8)std::fmod(std::floor(timePassed), 60)); // "There has to be a better way!"
 
     if (secs.length() == 1) {
         secs = "0" + secs;
     }
 
-    string timeFormatted = mins + ":" + secs;
+    std::string timeFormatted = mins + ":" + secs;
 
-    string comment = TextFormat("Subject failed successfully. %i cuckoos were left uncollected.", totalCuckoos - cuckooCount);
+    std::string comment = TextFormat("Subject failed successfully. %i cuckoos were left uncollected.", totalCuckoos - cuckooCount);
 
     if (cuckooCount >= totalCuckoos) {
         comment = "Subject did extraordinarily well.";

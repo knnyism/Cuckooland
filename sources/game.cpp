@@ -41,7 +41,7 @@ namespace game {
         return cameraMatrix;
     }
 
-    void Model::Load(string path, Vec3 position, Quat rotation, f32 overrideMass, f32 overrideFriction, EMotionType motionType, ObjectLayer layer) {
+    void Model::Load( std::string path, Vec3 position, Quat rotation, f32 overrideMass, f32 overrideFriction, EMotionType motionType, ObjectLayer layer) {
         raylibModel = GetModel(path);
         BodyCreationSettings bcs = BodyCreationSettings(new ConvexHullShapeSettings(*GetShape(path)), position, rotation, motionType, layer);
 

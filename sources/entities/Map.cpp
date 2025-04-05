@@ -1,6 +1,6 @@
 #include <entities/Map.h>
 
-void Map::Load(string map_path) {
+void Map::Load( std::string map_path) {
     // TODO: Clean this up
     model = GetModel(map_path);
 

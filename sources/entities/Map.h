@@ -15,7 +15,7 @@ class Map : public Entity {
 public:
     raylib::Model* model;
 
-    void Load(string path);
+    void Load( std::string path);
     void Tick() override;
     void Render() override;
 };

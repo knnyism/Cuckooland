@@ -21,7 +21,7 @@
 #include <entities/SoundPlayer.h>
 #include <entities/Checkpoint.h>
 
-static void CreateAmbienceTrigger(Player* player, string soundPath, Vec3 position, Vec3 size) {
+static void CreateAmbienceTrigger(Player* player, std::string soundPath, Vec3 position, Vec3 size) {
     SoundPlayer* ambSound = CreateEntity<SoundPlayer>();
     game::Sound3D* sound = new game::Sound3D(soundPath, position, 1, 1, true);
     sound->maxDistance = 20.0f;

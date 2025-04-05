@@ -1,13 +1,13 @@
 #include <resources.h>
 
 Assimp::Importer importer;
-const string assetsPath = "./assets/";
+const std::string assetsPath = "./assets/";
 
-std::map<string, raylib::Model*> models;
-std::map<string, Array<Vec3>*> shapes;
-std::map<string, raylib::Sound*> sounds;
+std::map<std::string, raylib::Model*> models;
+std::map<std::string, Array<Vec3>*> shapes;
+std::map<std::string, raylib::Sound*> sounds;
 
-raylib::Model* GetModel(string path) {
+raylib::Model* GetModel( std::string path) {
     if (models[path] == nullptr) {
         raylib::Model* model = new raylib::Model(assetsPath + "models/" + path + ".glb");
 
@@ -25,9 +25,9 @@ raylib::Model* GetModel(string path) {
     return models[path];
 }
 
-Array<Vec3>* GetShape(string path) {
+Array<Vec3>* GetShape( std::string path) {
     if (shapes[path] == nullptr) {
-        string extension = ".p.glb";
+        std::string extension = ".p.glb";
         if (!std::filesystem::exists(assetsPath + "models/" + path + extension))
             extension = ".glb";
 
@@ -69,7 +69,7 @@ Array<Vec3>* GetShape(string path) {
     return shapes[path];
 }
 
-raylib::Sound* GetSound(string path) {
+raylib::Sound* GetSound( std::string path) {
     if (sounds[path] == nullptr) {
         sounds[path] = new raylib::Sound(assetsPath + "sounds/" + path + ".wav");
     }
@@ -77,6 +77,6 @@ raylib::Sound* GetSound(string path) {
     return sounds[path];
 }
 
-string GetAssetPath(string localDirectory) {
+std::string GetAssetPath( std::string localDirectory) {
     return assetsPath + localDirectory;
 }

@@ -6,7 +6,7 @@
 class Hud : public Entity {
 public:
     bool showCuckoos;
-    void SetSubtitle(string subtitle);
+    void SetSubtitle( std::string subtitle);
 
     void ShowEndGameScreen();
     void ShowSaveIcon();
@@ -41,6 +41,6 @@ private:
 
     f32 saveIconAppearTime;
 
-    string currentSub;
+    std::string currentSub;
     f32 subDissapearTime;
 };

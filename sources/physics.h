@@ -183,7 +183,7 @@ public:
     Vec3 velocity;
     Body* body;
 
-    MoveHelper(Vec3 position = Vec3(0, 0, 0), Vec3 velocity = Vec3::sZero(), Body* body = new Body()) : position(position), velocity(velocity), body(body) {};
+    MoveHelper(Vec3 position = Vec3(0, 0, 0), Vec3 velocity = Vec3::sZero(), Body* body = nullptr) : position(position), velocity(velocity), body(body) {};
 
     void MoveAndSlide(Ref<const Shape> shape);
 private:

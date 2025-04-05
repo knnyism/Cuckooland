@@ -21,8 +21,8 @@
 
 #include <map>
 
-raylib::Model* GetModel(string path);
-Array<Vec3>* GetShape(string path);
-raylib::Sound* GetSound(string path);
+raylib::Model* GetModel(std::string path);
+Array<Vec3>* GetShape( std::string path);
+raylib::Sound* GetSound( std::string path);
 
-string GetAssetPath(string localDirectory);
+std::string GetAssetPath( std::string localDirectory);

@@ -2,7 +2,7 @@
 
 constexpr f32 HINGE_SIZE = 0.5f;
 
-void Door::Load(const string path, Vec3 pos, Quat rot, f32 mass, f32 hingeLimitsMin, f32 hingeLimitsMax) {
+void Door::Load(const std::string path, Vec3 pos, Quat rot, f32 mass, f32 hingeLimitsMin, f32 hingeLimitsMax) {
     model.Load(path, pos, rot, mass);
 
     Mat44 doorMatrix = Mat44::sRotationTranslation(rot, pos);

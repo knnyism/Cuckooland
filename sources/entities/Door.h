@@ -12,7 +12,7 @@ public:
     Body* body1;
     Body* body2;
 
-    void Load(const string path, Vec3 pos = Vec3::sZero(), Quat rot = Quat::sIdentity(), f32 mass = 10.0f, f32 hingeLimitsMin = -90.0f, f32 hingeLimitsMax = 90.0f);
+    void Load(const std::string path, Vec3 pos = Vec3::sZero(), Quat rot = Quat::sIdentity(), f32 mass = 10.0f, f32 hingeLimitsMin = -90.0f, f32 hingeLimitsMax = 90.0f);
     void Tick() override;
     void Render() override;
 };

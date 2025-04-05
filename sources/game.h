@@ -154,7 +154,7 @@ namespace game {
         JPH::Body* body;
         JPH::BodyID bodyId;
 
-        void Model::Load(string path, Vec3 position = Vec3::sZero(), Quat rotation = Quat::sIdentity(), f32 overrideMass = -1.0f, f32 overrideFriction = 0.5f, EMotionType motionType = EMotionType::Dynamic, ObjectLayer layer = Layers::MOVING);
+        void Model::Load( std::string path, Vec3 position = Vec3::sZero(), Quat rotation = Quat::sIdentity(), f32 overrideMass = -1.0f, f32 overrideFriction = 0.5f, EMotionType motionType = EMotionType::Dynamic, ObjectLayer layer = Layers::MOVING);
         void Model::Tick();
         void Model::Render();
 
@@ -182,9 +182,9 @@ namespace game {
         u8 maxInstances;
         u8 maxVariations;
 
-        string path;
+        std::string path;
 
-        Sound(string soundPath, u8 maxInstances = 8, u8 maxVariations = 1, bool isLooped = false) : maxInstances(maxInstances), maxVariations(maxVariations), isLooped(isLooped) {
+        Sound( std::string soundPath, u8 maxInstances = 8, u8 maxVariations = 1, bool isLooped = false) : maxInstances(maxInstances), maxVariations(maxVariations), isLooped(isLooped) {
             path = soundPath;
             if (maxVariations > 1) {
                 for (u8 i = 0; i < maxInstances; i++) {
@@ -217,7 +217,7 @@ namespace game {
 
         Sound3D() = default;
 
-        Sound3D(string soundPath, Vec3 position = Vec3::sZero(), u8 maxInstances = 8, u8 maxVariations = 1, bool isLooped = false) : Sound(soundPath, maxInstances, maxVariations, isLooped), position(position) {};
+        Sound3D( std::string soundPath, Vec3 position = Vec3::sZero(), u8 maxInstances = 8, u8 maxVariations = 1, bool isLooped = false) : Sound(soundPath, maxInstances, maxVariations, isLooped), position(position) {};
 
         void Play() override;
         void Stop() override;

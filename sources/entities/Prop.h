@@ -12,7 +12,7 @@ class Prop : public Entity {
 public:
     game::Model model;
 
-    void Load(const string path, Vec3 pos = Vec3::sZero(), Quat rot = Quat::sIdentity(), f32 overrideMass = -1.0f, f32 overrideFriction = 0.5f, ObjectLayer layer = Layers::MOVING, PropMaterial material = MATERIAL_METAL, EMotionType motionType = EMotionType::Dynamic);
+    void Load(const std::string path, Vec3 pos = Vec3::sZero(), Quat rot = Quat::sIdentity(), f32 overrideMass = -1.0f, f32 overrideFriction = 0.5f, ObjectLayer layer = Layers::MOVING, PropMaterial material = MATERIAL_METAL, EMotionType motionType = EMotionType::Dynamic);
 
     void Tick() override;
     void Render() override;
@@ -25,7 +25,7 @@ public:
 
     void OnContactAdded(const Body& inBody1, const Body& inBody2, const ContactManifold& inManifold, ContactSettings& ioSettings);
 private:
-    string modelPath;
+    std::string modelPath;
     Trigger* trigger;
 
     bool emitSound = false;

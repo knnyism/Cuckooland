@@ -1,6 +1,6 @@
 #include <entities/Prop.h>
 
-void Prop::Load(const string path, Vec3 position, Quat rotation, f32 overrideMass, f32 overrideFriction, ObjectLayer layer, PropMaterial material, EMotionType motionType) {
+void Prop::Load(const std::string path, Vec3 position, Quat rotation, f32 overrideMass, f32 overrideFriction, ObjectLayer layer, PropMaterial material, EMotionType motionType) {
     model.Load(path, position, rotation, overrideMass, overrideFriction, motionType, layer);
 
     modelPath = path;
